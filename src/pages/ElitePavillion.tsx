@@ -7,11 +7,15 @@ import { toBlob } from 'html-to-image';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
 
+const DEFAULT_AVATAR = `data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%233f3f46'/%3E%3Ccircle cx='75' cy='55' r='25' fill='%23a1a1aa'/%3E%3Cpath d='M25 130 Q75 80 125 130 Z' fill='%23a1a1aa'/%3E%3C/svg%3E`;
+const CROWN_ICON = `data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23EAB308' stroke='%23EAB308' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 1l3 11h14l3-11-6 8-4-8-4 8z'/%3E%3Cpath d='M4 14h16v4H4z'/%3E%3C/svg%3E`;
+
 export const ElitePavillion: React.FC = () => {
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const shareCardRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -31,7 +35,7 @@ export const ElitePavillion: React.FC = () => {
                rank: currentRank,
                name: p.name,
                points: p.metrics.totalPoints.toLocaleString(),
-               avatar: p.profileImage?.includes('pravatar') ? '/default-avatar.svg' : (p.profileImage || '/default-avatar.svg'),
+               avatar: p.profileImage?.includes('pravatar') || !p.profileImage || p.profileImage.includes('default-avatar') ? DEFAULT_AVATAR : p.profileImage,
                movement: 0,
                form: p.metrics.form || []
             }
@@ -84,15 +88,17 @@ export const ElitePavillion: React.FC = () => {
   }
 
   const handleWhatsAppShare = async () => {
-    if (!containerRef.current) return;
+    if (!shareCardRef.current) return;
     
     try {
       setIsSharing(true);
       await new Promise(r => setTimeout(r, 100));
 
-      const blob = await toBlob(containerRef.current, {
+      // Render hidden card to blob
+      const blob = await toBlob(shareCardRef.current, {
         cacheBust: true,
-        style: { background: 'var(--bg-dark)' },
+        pixelRatio: 2, // High-quality rendering
+        style: { background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)' },
       });
 
       if (!blob) throw new Error("Could not generate image");
@@ -135,10 +141,78 @@ export const ElitePavillion: React.FC = () => {
       
       {/* Visual Overlay to tell user sharing is in progress */}
       {isSharing && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: '#EAB308', fontWeight: 'bold' }}>Capturing Leaderboard...</span>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="loader" style={{ marginBottom: '20px' }}></div>
+          <span style={{ color: '#EAB308', fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '1px' }}>Building High-Res Image...</span>
         </div>
       )}
+
+      {/* Hidden Landscape Share Card */}
+      <div 
+        ref={shareCardRef}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: 0,
+          width: '1200px',
+          height: '630px',
+          background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          padding: '50px 0',
+          fontFamily: '"Inter", sans-serif',
+          color: '#ffffff',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '60px' }}>
+          <div style={{ width: '60px', height: '60px', background: '#EAB308', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🏏</div>
+          <h1 style={{ fontSize: '56px', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, color: '#FFFFFF', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>SKYHIGH LEAGUE</h1>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '50px', width: '100%', height: '350px' }}>
+          {/* Rank 2 */}
+          {podium[0] && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
+               <img src={podium[0].avatar} style={{ width: '130px', height: '130px', borderRadius: '50%', border: '5px solid #C0C0C0', marginBottom: '20px', objectFit: 'cover', background: '#3f3f46' }} crossOrigin="anonymous" />
+               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', width: '100%', textAlign: 'center', borderTop: '8px solid #C0C0C0', backdropFilter: 'blur(10px)' }}>
+                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{podium[0].name}</p>
+                 <p style={{ margin: '10px 0 0 0', fontSize: '42px', fontWeight: 900, color: '#FFFFFF' }}>{podium[0].points}</p>
+                 <span style={{ background: '#C0C0C0', color: '#000', padding: '6px 16px', borderRadius: '20px', fontSize: '18px', fontWeight: 800, marginTop: '20px', display: 'inline-block' }}>RANK 2</span>
+               </div>
+            </div>
+          )}
+
+          {/* Rank 1 */}
+          {podium[1] && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '340px', transform: 'translateY(-40px)' }}>
+               <div style={{ position: 'relative' }}>
+                 <img src={CROWN_ICON} style={{ position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', width: '70px', height: '70px', zIndex: 10 }} />
+                 <img src={podium[1].avatar} style={{ width: '180px', height: '180px', borderRadius: '50%', border: '8px solid #EAB308', marginBottom: '25px', objectFit: 'cover', background: '#3f3f46' }} crossOrigin="anonymous" />
+               </div>
+               <div style={{ background: 'rgba(234,179,8,0.1)', padding: '30px', borderRadius: '24px', width: '100%', textAlign: 'center', borderTop: '10px solid #EAB308', boxShadow: '0 0 50px rgba(234,179,8,0.2)' }}>
+                 <p style={{ margin: 0, fontSize: '36px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{podium[1].name}</p>
+                 <p style={{ margin: '10px 0 0 0', fontSize: '64px', fontWeight: 900, color: '#EAB308', textShadow: '0 0 20px rgba(234,179,8,0.5)' }}>{podium[1].points}</p>
+                 <span style={{ background: 'linear-gradient(90deg, #EAB308, #FDE047)', color: '#000', padding: '8px 24px', borderRadius: '20px', fontSize: '22px', fontWeight: 900, marginTop: '20px', display: 'inline-block', boxShadow: '0 4px 15px rgba(234,179,8,0.4)' }}>CHAMPION</span>
+               </div>
+            </div>
+          )}
+
+          {/* Rank 3 */}
+          {podium[2] && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
+               <img src={podium[2].avatar} style={{ width: '130px', height: '130px', borderRadius: '50%', border: '5px solid #CD7F32', marginBottom: '20px', objectFit: 'cover', background: '#3f3f46' }} crossOrigin="anonymous" />
+               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', width: '100%', textAlign: 'center', borderTop: '8px solid #CD7F32', backdropFilter: 'blur(10px)' }}>
+                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{podium[2].name}</p>
+                 <p style={{ margin: '10px 0 0 0', fontSize: '42px', fontWeight: 900, color: '#FFFFFF' }}>{podium[2].points}</p>
+                 <span style={{ background: '#CD7F32', color: '#000', padding: '6px 16px', borderRadius: '20px', fontSize: '18px', fontWeight: 800, marginTop: '20px', display: 'inline-block' }}>RANK 3</span>
+               </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <header className={styles.header}>
         <div className={styles.headerLeft}>
@@ -187,7 +261,7 @@ export const ElitePavillion: React.FC = () => {
                    <div className={styles.haloEffect}></div>
                    <img src={podium[1].avatar} alt={podium[1].name} className={styles.podiumAvatarRank1} />
                    <div className={styles.badge1}>
-                     <img src="/crown.svg" alt="Rank 1" className={styles.crownIconBadge} />
+                     <img src={CROWN_ICON} alt="Rank 1" className={styles.crownIconBadge} />
                    </div>
                  </div>
                  <div className={styles.podiumDetailsRank1}>
