@@ -7,8 +7,57 @@ import { toBlob } from 'html-to-image';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
 
-const DEFAULT_AVATAR = `data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%233f3f46'/%3E%3Ccircle cx='75' cy='55' r='25' fill='%23a1a1aa'/%3E%3Cpath d='M25 130 Q75 80 125 130 Z' fill='%23a1a1aa'/%3E%3C/svg%3E`;
-const CROWN_ICON = `data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23EAB308' stroke='%23EAB308' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 1l3 11h14l3-11-6 8-4-8-4 8z'/%3E%3Cpath d='M4 14h16v4H4z'/%3E%3C/svg%3E`;
+const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTAgMTUwIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzNmM2Y0NiIvPjxjaXJjbGUgY3g9Ijc1IiBjeT0iNTUiIHI9IjI1IiBmaWxsPSIjYTFhMWFhIi8+PHBhdGggZD0iTTI1IDEzMCBRNzUgODAgMTI1IDEzMCBaIiBmaWxsPSIjYTFhMWFhIi8+PC9zdmc+`;
+const CROWN_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0VBQjMwOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgMWwzIDExaDE0bDMtMTEtNiA4LTQtOC00IDh6Ii8+PHBhdGggZD0iTTQgMTRoMTZ2NEg0eiIvPjwvc3ZnPg==`;
+
+const SharePlayerCard = ({ rank, player, width, avatarSize, ringColor, bgColor }: any) => {
+  if (!player) return null;
+  const isChamp = rank === 1;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: `${width}px` }}>
+      {/* Avatar Section */}
+      <div style={{ position: 'relative', zIndex: 10, marginBottom: `-${avatarSize / 2}px`, display: 'flex', justifyContent: 'center' }}>
+        {isChamp && (
+          <img src={CROWN_ICON} style={{ position: 'absolute', top: '-55px', zIndex: 20, width: '80px', height: '80px' }} alt="Crown" />
+        )}
+        <img 
+          src={player.avatar?.includes('pravatar') || !player.avatar || player.avatar.includes('default-avatar') ? DEFAULT_AVATAR : player.avatar} 
+          style={{ width: `${avatarSize}px`, height: `${avatarSize}px`, borderRadius: '50%', border: `8px solid ${ringColor}`, objectFit: 'cover', background: '#3f3f46', position: 'relative', zIndex: 10 }} 
+          crossOrigin="anonymous" 
+          alt={player.name}
+        />
+      </div>
+
+      {/* Info Card */}
+      <div style={{ 
+        background: bgColor, 
+        padding: `${avatarSize / 2 + 30}px 20px 30px 20px`, 
+        borderRadius: '24px', 
+        width: '100%', 
+        borderTop: `10px solid ${ringColor}`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        boxShadow: isChamp ? '0 0 50px rgba(234,179,8,0.2)' : 'none',
+        position: 'relative',
+        zIndex: 5
+      }}>
+        <p style={{ margin: 0, fontSize: isChamp ? '36px' : '28px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', maxWidth: '90%' }}>{player.name}</p>
+        <p style={{ margin: '15px 0 0 0', fontSize: isChamp ? '64px' : '48px', fontWeight: 900, color: isChamp ? '#EAB308' : '#fff', textShadow: isChamp ? '0 0 20px rgba(234,179,8,0.5)' : 'none' }}>{player.points}</p>
+        <span style={{ 
+          background: isChamp ? 'linear-gradient(90deg, #EAB308, #FDE047)' : ringColor, 
+          color: '#000', 
+          padding: '8px 24px', 
+          borderRadius: '20px', 
+          fontSize: '20px', 
+          fontWeight: 900, 
+          marginTop: '25px',
+          boxShadow: isChamp ? '0 4px 15px rgba(234,179,8,0.4)' : 'none'
+        }}>
+          {isChamp ? 'CHAMPION' : `RANK ${rank}`}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const ElitePavillion: React.FC = () => {
   const [standings, setStandings] = useState<any[]>([]);
@@ -165,50 +214,17 @@ export const ElitePavillion: React.FC = () => {
           boxSizing: 'border-box'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '60px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '80px' }}>
           <div style={{ width: '60px', height: '60px', background: '#EAB308', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🏏</div>
-          <h1 style={{ fontSize: '56px', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, color: '#FFFFFF', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>SKYHIGH LEAGUE</h1>
+          <h1 style={{ fontSize: '64px', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, color: '#FFFFFF', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>SKYHIGH LEAGUE</h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '50px', width: '100%', height: '350px' }}>
-          {/* Rank 2 */}
-          {podium[0] && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
-               <img src={podium[0].avatar} style={{ width: '130px', height: '130px', borderRadius: '50%', border: '5px solid #C0C0C0', marginBottom: '20px', objectFit: 'cover', background: '#3f3f46' }} crossOrigin="anonymous" />
-               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', width: '100%', textAlign: 'center', borderTop: '8px solid #C0C0C0', backdropFilter: 'blur(10px)' }}>
-                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{podium[0].name}</p>
-                 <p style={{ margin: '10px 0 0 0', fontSize: '42px', fontWeight: 900, color: '#FFFFFF' }}>{podium[0].points}</p>
-                 <span style={{ background: '#C0C0C0', color: '#000', padding: '6px 16px', borderRadius: '20px', fontSize: '18px', fontWeight: 800, marginTop: '20px', display: 'inline-block' }}>RANK 2</span>
-               </div>
-            </div>
-          )}
-
-          {/* Rank 1 */}
-          {podium[1] && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '340px', transform: 'translateY(-40px)' }}>
-               <div style={{ position: 'relative' }}>
-                 <img src={CROWN_ICON} style={{ position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', width: '70px', height: '70px', zIndex: 10 }} />
-                 <img src={podium[1].avatar} style={{ width: '180px', height: '180px', borderRadius: '50%', border: '8px solid #EAB308', marginBottom: '25px', objectFit: 'cover', background: '#3f3f46' }} crossOrigin="anonymous" />
-               </div>
-               <div style={{ background: 'rgba(234,179,8,0.1)', padding: '30px', borderRadius: '24px', width: '100%', textAlign: 'center', borderTop: '10px solid #EAB308', boxShadow: '0 0 50px rgba(234,179,8,0.2)' }}>
-                 <p style={{ margin: 0, fontSize: '36px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{podium[1].name}</p>
-                 <p style={{ margin: '10px 0 0 0', fontSize: '64px', fontWeight: 900, color: '#EAB308', textShadow: '0 0 20px rgba(234,179,8,0.5)' }}>{podium[1].points}</p>
-                 <span style={{ background: 'linear-gradient(90deg, #EAB308, #FDE047)', color: '#000', padding: '8px 24px', borderRadius: '20px', fontSize: '22px', fontWeight: 900, marginTop: '20px', display: 'inline-block', boxShadow: '0 4px 15px rgba(234,179,8,0.4)' }}>CHAMPION</span>
-               </div>
-            </div>
-          )}
-
-          {/* Rank 3 */}
-          {podium[2] && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
-               <img src={podium[2].avatar} style={{ width: '130px', height: '130px', borderRadius: '50%', border: '5px solid #CD7F32', marginBottom: '20px', objectFit: 'cover', background: '#3f3f46' }} crossOrigin="anonymous" />
-               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', width: '100%', textAlign: 'center', borderTop: '8px solid #CD7F32', backdropFilter: 'blur(10px)' }}>
-                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{podium[2].name}</p>
-                 <p style={{ margin: '10px 0 0 0', fontSize: '42px', fontWeight: 900, color: '#FFFFFF' }}>{podium[2].points}</p>
-                 <span style={{ background: '#CD7F32', color: '#000', padding: '6px 16px', borderRadius: '20px', fontSize: '18px', fontWeight: 800, marginTop: '20px', display: 'inline-block' }}>RANK 3</span>
-               </div>
-            </div>
-          )}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '40px', width: '100%', height: '350px' }}>
+          <SharePlayerCard rank={podium[0]?.rank || 2} player={podium[0]} width={280} avatarSize={130} ringColor="#C0C0C0" bgColor="rgba(255,255,255,0.05)" />
+          <div style={{ transform: 'translateY(-20px)' }}>
+            <SharePlayerCard rank={podium[1]?.rank || 1} player={podium[1]} width={340} avatarSize={180} ringColor="#EAB308" bgColor="rgba(234,179,8,0.1)" />
+          </div>
+          <SharePlayerCard rank={podium[2]?.rank || 3} player={podium[2]} width={280} avatarSize={130} ringColor="#CD7F32" bgColor="rgba(255,255,255,0.05)" />
         </div>
       </div>
       </div>
