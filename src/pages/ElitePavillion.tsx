@@ -3,49 +3,61 @@ import styles from './ElitePavillion.module.css';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-
-// Mock types for UI build
-interface StandingsPlayer {
-  id: string;
-  rank: number;
-  name: string;
-  points: string;
-  avatar: string;
-  movement: number; // positive for up, negative for down, 0 for steady
-  form: ('W'|'L'|'D')[]; // simplified last 5 matches
-}
-
-const mockStandings: StandingsPlayer[] = [
-  { id: '1', rank: 1, name: 'Rohan Das', points: '2,855', avatar: 'https://i.pravatar.cc/150?u=rohan', movement: 0, form: ['W','W','W','L','W'] },
-  { id: '2', rank: 2, name: 'Vikram S.', points: '2,410', avatar: 'https://i.pravatar.cc/150?u=vikram', movement: 0, form: ['W','L','W','W','D'] },
-  { id: '3', rank: 3, name: 'Zoya K.', points: '2,380', avatar: 'https://i.pravatar.cc/150?u=zoya', movement: 1, form: ['L','W','W','W','L'] },
-  { id: '4', rank: 4, name: 'Isha Sharma', points: '2,215', avatar: 'https://i.pravatar.cc/150?u=isha', movement: 2, form: ['W','D','L','L','W'] },
-  { id: '5', rank: 5, name: 'Kabir Singh', points: '2,190', avatar: 'https://i.pravatar.cc/150?u=kabir', movement: -1, form: ['L','L','W','L','D'] },
-  { id: '6', rank: 6, name: 'Priya Verma', points: '2,050', avatar: 'https://i.pravatar.cc/150?u=priya', movement: 0, form: ['D','L','L','L','L'] },
-];
+import { getPlayers } from '../lib/db';
+import type { Player } from '../lib/db';
 
 export const ElitePavillion: React.FC = () => {
-  const [standings, setStandings] = useState<StandingsPlayer[]>([]);
+  const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In final, fetch from DB. Using mock to build strict UI based on image.
-    setStandings(mockStandings);
-    setLoading(false);
+    const fetchLeaderboard = async () => {
+       try {
+         const dbPlayers = await getPlayers();
+         
+         // Calculate ties for accurate Rank numbering
+         let currentRank = 1;
+         const finalStandings = dbPlayers.map((p: Player, index: number) => {
+            if (index > 0) {
+               const prevP = dbPlayers[index - 1];
+               if (p.metrics.totalPoints < prevP.metrics.totalPoints) {
+                 currentRank = index + 1;
+               }
+            }
+            return {
+               id: p.id,
+               rank: currentRank,
+               name: p.name,
+               points: p.metrics.totalPoints.toLocaleString(),
+               avatar: p.profileImage,
+               movement: 0, // Mock movement
+               form: [] // Mock form
+            }
+         });
+         
+         setStandings(finalStandings);
 
-    // Premium subtle confetti trigger for Rank 1 (mocking "new" rank 1 arrival)
-    setTimeout(() => {
-      confetti({
-        particleCount: 60,
-        spread: 50,
-        origin: { y: 0.5 },
-        colors: ['#FFD700', '#FDE047', '#FFFFFF'],
-        disableForReducedMotion: true,
-      });
-    }, 800);
+         // Subtly trigger confetti if someone is Rank 1 and points > 0
+         if (finalStandings.length > 0 && finalStandings[0].points !== '0') {
+           setTimeout(() => {
+             confetti({
+               particleCount: 60,
+               spread: 50,
+               origin: { y: 0.5 },
+               colors: ['#FFD700', '#FDE047', '#FFFFFF'],
+               disableForReducedMotion: true,
+             });
+           }, 800);
+         }
+       } catch (error) {
+         console.error(error);
+       }
+       setLoading(false);
+    };
+
+    fetchLeaderboard();
   }, []);
-
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-4" style={{ color: "var(--text-secondary)" }}>Loading Leaderboard Data...</div>;
 
   const podium = [standings[1], standings[0], standings[2]]; // Rank 2, 1, 3
   const rest = standings.slice(3);
@@ -153,7 +165,7 @@ export const ElitePavillion: React.FC = () => {
                 <div className={styles.last5Matches}>
                   <span className={styles.last5Label}>LAST 5 MATCHES</span>
                   <div className={styles.dots}>
-                    {player.form.map((f, i) => (
+                    {player.form.map((f: string, i: number) => (
                       <span key={i} className={styles.dot} style={{ backgroundColor: getFormColor(f) }}></span>
                     ))}
                   </div>

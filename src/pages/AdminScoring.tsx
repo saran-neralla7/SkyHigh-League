@@ -2,34 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './AdminScoring.module.css';
-import { Crown, CheckCircle2 } from 'lucide-react';
-import { getPlayers } from '../lib/db';
+import { Crown, CheckCircle2, UserPlus, Loader2 } from 'lucide-react';
+import { getPlayers, addPlayer, saveMatchResults } from '../lib/db';
 import type { Player } from '../lib/db';
 
 export const AdminScoring: React.FC = () => {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [matchNumber, setMatchNumber] = useState('13');
+  const [matchNumber, setMatchNumber] = useState('1');
   const [scores, setScores] = useState<Record<string, string>>({});
+  
+  // Add Player State
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerTeam, setNewPlayerTeam] = useState('');
+  const [isAddingData, setIsAddingData] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
-       // Mock players for now, we will hook to DB later or use DB if populated
        const fetchMockPlayers = async () => {
          try {
            const dbPlayers = await getPlayers();
-           if (dbPlayers.length > 0) {
-             setPlayers(dbPlayers);
-           } else {
-             // Fallback to mock UI data matching design
-             setPlayers([
-               { id: '1', name: 'Virat Kohli', team: 'ROYAL CHALLENGERS', profileImage: 'https://i.pravatar.cc/150?u=virat', metrics: {wins:0, top3:0, average:0, totalPoints:0} },
-               { id: '2', name: 'Rohit Sharma', team: 'MUMBAI INDIANS', profileImage: 'https://i.pravatar.cc/150?u=rohit', metrics: {wins:0, top3:0, average:0, totalPoints:0} },
-               { id: '3', name: 'Smriti Mandhana', team: 'ROYAL CHALLENGERS', profileImage: 'https://i.pravatar.cc/150?u=smriti', metrics: {wins:0, top3:0, average:0, totalPoints:0} },
-               { id: '4', name: 'KL Rahul', team: 'LUCKNOW SUPER GIANTS', profileImage: 'https://i.pravatar.cc/150?u=kl', metrics: {wins:0, top3:0, average:0, totalPoints:0} },
-             ]);
-           }
+           setPlayers(dbPlayers);
          } catch(e) { console.error(e) }
          setLoading(false);
        };
@@ -46,13 +40,25 @@ export const AdminScoring: React.FC = () => {
     setScores(prev => ({ ...prev, [id]: val }));
   };
 
-  const handleSubmit = async () => {
-     // Core Logic Requirements:
-     // - Auto sort scores descending
-     // - Tie-breaker: Higher previous total points wins
-     // - If still equal -> assign same rank
-     // - Assign Points: Rank 1 -> 50, Rank 2 -> 30, Rank 3 -> 10, Others -> 0
+  const handleAddPlayer = async () => {
+    if (!newPlayerName.trim()) return;
+    setIsAddingData(true);
+    try {
+      const newP = await addPlayer(newPlayerName, newPlayerTeam);
+      setPlayers(prev => [...prev, newP]);
+      setNewPlayerName('');
+      setNewPlayerTeam('');
+    } catch(e) {
+      console.error(e);
+      alert("Failed to add player.");
+    }
+    setIsAddingData(false);
+  };
 
+  const handleSubmit = async () => {
+     if (players.length === 0) return alert("No players added.");
+     
+     setIsAddingData(true);
      // Map players with their inputted score
      const playerScores = players.map(p => {
        const scoreVal = parseFloat(scores[p.id]) || 0;
@@ -62,7 +68,6 @@ export const AdminScoring: React.FC = () => {
      // Sort
      playerScores.sort((a, b) => {
        if (b.score !== a.score) return b.score - a.score;
-       // Tie-Breaker
        return b.prevPoints - a.prevPoints;
      });
 
@@ -71,7 +76,6 @@ export const AdminScoring: React.FC = () => {
      const results = playerScores.map((item, index) => {
        if (index > 0) {
          const prevItem = playerScores[index - 1];
-         // Only increment rank if strictly worse in score or tie-breaker
          if (item.score < prevItem.score || (item.score === prevItem.score && item.prevPoints < prevItem.prevPoints)) {
            currentRank = index + 1;
          }
@@ -87,12 +91,23 @@ export const AdminScoring: React.FC = () => {
          name: item.player.name,
          score: item.score,
          rank: currentRank,
-         pointsAwarded: pts
+         pointsAwarded: pts,
+         prevPoints: item.prevPoints
        };
      });
 
-     console.log("Saving scores for match", matchNumber, results);
-     alert("Match Saved! Scores calculated and ranked.");
+     try {
+       await saveMatchResults(Number(matchNumber), results, players);
+       alert("Match Saved successfully via Firestore!");
+       setScores({});
+       setMatchNumber(String(Number(matchNumber) + 1));
+       const freshPlayers = await getPlayers();
+       setPlayers(freshPlayers);
+     } catch (err) {
+       console.error(err);
+       alert("Upload failed. Ensure Firebase is connected and rules are set.");
+     }
+     setIsAddingData(false);
   }
 
   if (loading) return <div className="p-4">Loading UI...</div>;
@@ -115,7 +130,7 @@ export const AdminScoring: React.FC = () => {
 
       <section className={styles.identityGroup}>
         <div className={styles.identityCard}>
-           <p className={styles.cardEyebrow}>IDENTITY & SEQUENCE</p>
+           <p className={styles.cardEyebrow}>MATCH DATA</p>
            <label>Match Number</label>
            <div className={styles.matchNumberInputWrapper}>
              <input 
@@ -126,6 +141,36 @@ export const AdminScoring: React.FC = () => {
              />
              <div className={styles.crownIcon}>
                <Crown size={20} color="#EAB308" />
+             </div>
+           </div>
+        </div>
+
+        <div className={styles.identityCard} style={{ marginTop: '1rem' }}>
+           <p className={styles.cardEyebrow}>ADD NEW PLAYER</p>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+             <input 
+                type="text" 
+                placeholder="Player Name" 
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                className={styles.matchNumberInput}
+                style={{ padding: '0.75rem', fontSize: '0.875rem' }}
+             />
+             <div style={{ display: 'flex', gap: '0.5rem' }}>
+               <input 
+                  type="text" 
+                  placeholder="Team Alias (Optional)" 
+                  value={newPlayerTeam}
+                  onChange={(e) => setNewPlayerTeam(e.target.value)}
+                  className={styles.matchNumberInput}
+                  style={{ padding: '0.75rem', fontSize: '0.875rem', flex: 1 }}
+               />
+               <button 
+                  onClick={handleAddPlayer} 
+                  disabled={isAddingData}
+                  style={{ background: 'var(--accent-primary)', color: '#000', padding: '0 1rem', borderRadius: '8px', fontWeight: 'bold' }}>
+                  <UserPlus size={18} />
+               </button>
              </div>
            </div>
         </div>
@@ -164,8 +209,8 @@ export const AdminScoring: React.FC = () => {
          </div>
       </section>
 
-      <button className={styles.submitBtn} onClick={handleSubmit}>
-         SAVE MATCH RESULTS
+      <button className={styles.submitBtn} onClick={handleSubmit} disabled={isAddingData}>
+         {isAddingData ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Loader2 size={18} strokeWidth={2.5} style={{ animation: 'spin 1.5s linear infinite' }} /> PROCESSING...</span> : 'SAVE MATCH RESULTS'}
       </button>
     </div>
   );

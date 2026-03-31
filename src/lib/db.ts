@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, query, orderBy, where, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, orderBy, where, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Types
@@ -44,6 +44,19 @@ export const getPlayers = async (): Promise<Player[]> => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
 };
 
+export const addPlayer = async (name: string, team?: string) => {
+  const newRef = doc(playersRef);
+  const newPlayer: Player = {
+    id: newRef.id,
+    name,
+    team: team || '',
+    profileImage: `https://i.pravatar.cc/150?u=${newRef.id}`,
+    metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0 }
+  };
+  await setDoc(newRef, newPlayer);
+  return newPlayer;
+};
+
 // Seed Initial Players (Helper for testing)
 export const seedPlayers = async (players: Omit<Player, "metrics">[]) => {
   for (const p of players) {
@@ -76,3 +89,44 @@ export const getMatchEntries = async (matchId: string): Promise<Entry[]> => {
   const snapshot = await getDocs(query(entriesRef, where('matchId', '==', matchId), orderBy('rank', 'asc')));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
 }
+
+export const saveMatchResults = async (matchNumber: number, results: any[], allPlayers: Player[]) => {
+  const batch = writeBatch(db);
+  
+  // Create Match Document
+  const newMatchRef = doc(matchesRef);
+  batch.set(newMatchRef, {
+    id: newMatchRef.id,
+    matchNumber,
+    createdAt: Timestamp.now(),
+    locked: true
+  });
+
+  // Create Entries and Update Players
+  for (const result of results) {
+    // Entry
+    const newEntryRef = doc(entriesRef);
+    batch.set(newEntryRef, {
+      id: newEntryRef.id,
+      matchId: newMatchRef.id,
+      playerId: result.playerId,
+      score: result.score,
+      rank: result.rank,
+      pointsAwarded: result.pointsAwarded,
+      previousPoints: result.prevPoints
+    });
+
+    // Player metrics
+    const playerToUpdate = allPlayers.find(p => p.id === result.playerId);
+    if (playerToUpdate) {
+      const pRef = doc(playersRef, playerToUpdate.id);
+      batch.update(pRef, {
+        'metrics.totalPoints': playerToUpdate.metrics.totalPoints + result.pointsAwarded,
+        'metrics.wins': playerToUpdate.metrics.wins + (result.rank === 1 ? 1 : 0),
+        'metrics.top3': playerToUpdate.metrics.top3 + (result.rank <= 3 ? 1 : 0)
+      });
+    }
+  }
+
+  await batch.commit();
+};
