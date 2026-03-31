@@ -5,7 +5,6 @@ import { ArrowLeft, Award, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { getMatches, getMatchEntries, getPlayers } from '../lib/db';
-import type { Player } from '../lib/db';
 
 interface PastMatch {
   id: string;
