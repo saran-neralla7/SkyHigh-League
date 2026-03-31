@@ -165,7 +165,7 @@ export const ElitePavillion: React.FC = () => {
                 <div className={styles.last5Matches}>
                   <span className={styles.last5Label}>LAST 5 MATCHES</span>
                   <div className={styles.dots}>
-                    {player.form.map((f: string, i: number) => (
+                    {(player.form || []).map((f: 'W' | 'L' | 'D', i: number) => (
                       <span key={i} className={styles.dot} style={{ backgroundColor: getFormColor(f) }}></span>
                     ))}
                   </div>
