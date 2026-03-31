@@ -20,6 +20,7 @@ export interface Player {
 export interface Match {
   id: string;
   matchNumber: number;
+  matchTitle?: string;
   createdAt: Timestamp;
   locked: boolean;
 }
@@ -31,7 +32,7 @@ export interface Entry {
   score: number;
   rank: number;
   pointsAwarded: number;
-  previousPoints: number; // for tie-breaker reference
+  previousPoints: number;
 }
 
 // References
@@ -52,7 +53,7 @@ export const addPlayer = async (name: string, team?: string) => {
     name,
     team: team || '',
     profileImage: `https://i.pravatar.cc/150?u=${newRef.id}`,
-    metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0 }
+    metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0, form: [] }
   };
   await setDoc(newRef, newPlayer);
   return newPlayer;
@@ -64,7 +65,7 @@ export const seedPlayers = async (players: Omit<Player, "metrics">[]) => {
     const docRef = doc(playersRef, p.id);
     await setDoc(docRef, {
       ...p,
-      metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0 }
+      metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0, form: [] }
     });
   }
 };
@@ -91,7 +92,13 @@ export const getMatchEntries = async (matchId: string): Promise<Entry[]> => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
 }
 
-export const saveMatchResults = async (matchNumber: number, results: any[], allPlayers: Player[]) => {
+// Get all entries for a specific player across all matches
+export const getPlayerEntries = async (playerId: string): Promise<Entry[]> => {
+  const snapshot = await getDocs(query(entriesRef, where('playerId', '==', playerId)));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
+}
+
+export const saveMatchResults = async (matchNumber: number, results: any[], allPlayers: Player[], matchTitle?: string) => {
   const batch = writeBatch(db);
   
   // Create Match Document
@@ -99,6 +106,7 @@ export const saveMatchResults = async (matchNumber: number, results: any[], allP
   batch.set(newMatchRef, {
     id: newMatchRef.id,
     matchNumber,
+    matchTitle: matchTitle || `Match ${matchNumber}`,
     createdAt: Timestamp.now(),
     locked: true
   });
@@ -127,7 +135,7 @@ export const saveMatchResults = async (matchNumber: number, results: any[], allP
       else if (result.rank <= 5) formResult = 'D';
 
       const currentForm = playerToUpdate.metrics.form || [];
-      const newForm = [formResult, ...currentForm].slice(0, 5); // Keep last 5
+      const newForm = [formResult, ...currentForm].slice(0, 5);
 
       batch.update(pRef, {
         'metrics.totalPoints': playerToUpdate.metrics.totalPoints + result.pointsAwarded,

@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './MatchHistory.module.css';
-import { ArrowLeft, Award, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
-
 import { getMatches, getMatchEntries, getPlayers } from '../lib/db';
 
 interface PastMatch {
   id: string;
   name: string;
+  subtitle: string;
   date: string;
-  topPerformers: string[]; // avatar urls
-  resultPoints: number; // For history list, maybe max points given
+  topPerformers: string[];
+  resultPoints: number;
+  mvpName?: string;
 }
 
 export const MatchHistory: React.FC = () => {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<PastMatch[]>([]);
-  const [totalLeaguesPoints, setTotalLeaguePoints] = useState(0);
+  const [totalLeaguePoints, setTotalLeaguePoints] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,15 +38,18 @@ export const MatchHistory: React.FC = () => {
                return player ? player.profileImage : 'https://i.pravatar.cc/150';
             });
             const topScore = topEntries.length > 0 ? topEntries[0].pointsAwarded : 0;
+            const mvpPlayer = topEntries.length > 0 ? dbPlayers.find(p => p.id === topEntries[0].playerId) : null;
 
             const dateStr = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'}) : 'Recently';
 
             return {
                id: m.id,
                name: `MATCH ${m.matchNumber}`,
+               subtitle: (m as any).matchTitle || '',
                date: dateStr,
                topPerformers: avatars,
-               resultPoints: topScore
+               resultPoints: topScore,
+               mvpName: mvpPlayer?.name
             };
          }));
          
@@ -58,7 +62,7 @@ export const MatchHistory: React.FC = () => {
     fetchData();
   }, []);
 
-  if (loading) return <div className="p-4 text-gray-400">Loading History...</div>;
+  if (loading) return <div className="p-4" style={{ color: 'var(--text-secondary)' }}>Loading History...</div>;
 
   return (
     <div className={styles.container}>
@@ -77,12 +81,12 @@ export const MatchHistory: React.FC = () => {
              <span className={styles.label}>MATCHES</span>
            </div>
            <div className={styles.totalPointsText}>
-             <span className={styles.totalValue}>{totalLeaguesPoints.toLocaleString()}</span>
+             <span className={styles.totalValue}>{totalLeaguePoints.toLocaleString()}</span>
              <span className={styles.labelTotal}>TOTAL POINTS</span>
            </div>
         </div>
         <div className={styles.progressBarWrapper}>
-           <div className={styles.progressFill} style={{ width: '65%' }}></div>
+           <div className={styles.progressFill} style={{ width: `${Math.min((matches.length / 20) * 100, 100)}%` }}></div>
         </div>
       </section>
 
@@ -100,6 +104,7 @@ export const MatchHistory: React.FC = () => {
           >
              <div className={styles.matchInfo}>
                <h2>{match.name}</h2>
+               {match.subtitle && <p style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 600 }}>{match.subtitle}</p>}
                <p>{match.date}</p>
              </div>
              
@@ -110,6 +115,7 @@ export const MatchHistory: React.FC = () => {
                    <img key={i} src={av} className={styles.tinyAvatar} style={{ zIndex: 3 - i }} alt="Performer" />
                  ))}
                </div>
+               {match.mvpName && <span style={{ fontSize: '0.65rem', color: '#EAB308', fontWeight: 600 }}>👑 MVP: {match.mvpName}</span>}
              </div>
 
              <div className={styles.resultDetails}>
@@ -123,10 +129,11 @@ export const MatchHistory: React.FC = () => {
           </motion.div>
         ))}
 
-        <button className={styles.loadMoreBtn}>
-           <RotateCcw size={16} />
-           LOAD PREVIOUS MATCHES
-        </button>
+        {matches.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>
+            <p>No matches played yet.</p>
+          </div>
+        )}
       </div>
     </div>
   );

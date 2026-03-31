@@ -6,9 +6,8 @@ import { MatchHistory } from './pages/MatchHistory';
 import { AdminScoring } from './pages/AdminScoring';
 import { MatchDetails } from './pages/MatchDetails';
 import { PlayerProfile } from './pages/PlayerProfile';
-
-// Stats is still a placeholder for now since it wasn't requested strictly yet, but we will add a simple placeholder.
-const Stats = () => <div className="p-4 text-center mt-10"><h1>Stats Comming Soon</h1></div>;
+import { Stats } from './pages/Stats';
+import { Squad } from './pages/Squad';
 
 function App() {
   return (
@@ -18,6 +17,7 @@ function App() {
           <Route index element={<ElitePavillion />} />
           <Route path="history" element={<MatchHistory />} />
           <Route path="stats" element={<Stats />} />
+          <Route path="squad" element={<Squad />} />
           <Route path="admin" element={<AdminScoring />} />
           <Route path="match/:id" element={<MatchDetails />} />
           <Route path="profile/:id" element={<PlayerProfile />} />
