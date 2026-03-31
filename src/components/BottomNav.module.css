@@ -1,0 +1,58 @@
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: var(--bg-bottom-nav);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-color);
+  z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom, 20px); /* For iOS safety */
+}
+
+.navList {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+}
+
+.navItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  transition: all var(--transition-fast);
+  padding: 8px 16px;
+  border-radius: 12px;
+}
+
+.navItem:active {
+  transform: scale(0.92);
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+  transition: all var(--transition-fast);
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.active {
+  color: var(--accent-primary);
+}
+
+.active .icon {
+  filter: drop-shadow(0 0 8px var(--accent-primary-glow));
+}

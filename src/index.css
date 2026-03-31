@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Core Colors */
+  --bg-dark: #09090b; /* Very dark grayish black */
+  --bg-card: #121214;
+  --bg-card-hover: #18181b;
+  --bg-elevated: #1e1e24; /* Lighter background for elevated cards */
+  --bg-bottom-nav: rgba(18, 18, 20, 0.85); /* Blurred iOS style */
+  
+  --accent-primary: #FFD700; /* Gold */
+  --accent-primary-glow: rgba(255, 215, 0, 0.2);
+  --accent-secondary: #22c55e; /* Green for positive */
+  --accent-danger: #ef4444; /* Red for negative */
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa; /* Gray 400 */
+  --text-tertiary: #52525b; /* Gray 600 */
+  --text-accent: #000000; /* For text on gold */
+  
+  /* Shadows & Depth */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 15px var(--accent-primary-glow);
+  
+  /* Border */
+  --border-color: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(255, 215, 0, 0.5);
+
+  /* Animation */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  /* Prevent blue highlight on tap */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Base styles for premium look */
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+}
+
+/* Reusable Utility Classes */
+.glass-effect {
+  background: var(--bg-bottom-nav);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-color);
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  transition: all var(--transition-fast);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #FFD700, #FFF5E1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

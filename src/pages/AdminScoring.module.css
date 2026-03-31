@@ -1,0 +1,242 @@
+.container {
+  padding: 1.5rem 1rem;
+  padding-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar {
+  width: 18px;
+  height: 2px;
+  background-color: var(--text-secondary);
+  border-radius: 2px;
+}
+
+.bar:nth-child(2) {
+  width: 14px;
+}
+
+.headerLeft h1 {
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+}
+
+.adminAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.identityGroup {
+  margin-bottom: 2.5rem;
+}
+
+.identityCard {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.cardEyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.identityCard label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.matchNumberInputWrapper {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.matchNumberInput {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--accent-primary);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.matchNumberInput:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.crownIcon {
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 215, 0, 0.05);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+}
+
+.performanceSection {
+  margin-bottom: 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.25rem;
+}
+
+.sectionHeader h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.activeCount {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.playerList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.playerCard {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.playerCard:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.playerInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatarWrapper {
+  position: relative;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.verifiedIcon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  color: var(--accent-secondary);
+}
+
+.nameDetails h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.nameDetails p {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scoreInputWrapper {
+  width: 60px;
+}
+
+.scoreInput {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid transparent;
+  padding: 0.5rem;
+  border-radius: 20px;
+  text-align: center;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.scoreInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.scoreInput:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.submitBtn {
+  width: 100%;
+  background: var(--accent-primary);
+  color: var(--bg-dark);
+  padding: 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
+}

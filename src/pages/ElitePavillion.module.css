@@ -1,0 +1,298 @@
+.container {
+  padding: 1.5rem 1.25rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.headerLeft h1 {
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.bellBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Podium */
+.podiumSection {
+  margin-bottom: 3rem;
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.podiumContainer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.podiumItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  padding: 1.5rem 0.5rem 1rem;
+  flex: 1;
+  position: relative;
+}
+
+.rank2 {
+  height: 140px;
+}
+.rank3 {
+  height: 130px;
+}
+.rank1 {
+  height: 180px;
+  z-index: 10;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+  border-color: rgba(255, 215, 0, 0.2);
+  background: linear-gradient(180deg, #18181b 0%, var(--bg-card) 100%);
+}
+
+.avatarWrapper {
+  position: absolute;
+  top: -30px;
+}
+
+.podiumAvatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  object-fit: cover;
+}
+
+.badge2, .badge3 {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  color: black;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-dark);
+}
+
+.badge3 {
+  background: #d4af37; /* Bronze-ish / darker gold */
+}
+
+.podiumDetails {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.podiumName {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.podiumPoints {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.avatarWrapperRank1 {
+  position: absolute;
+  top: -45px;
+}
+
+.haloEffect {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.podiumAvatarRank1 {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-primary);
+  object-fit: cover;
+}
+
+.badge1 {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-dark);
+}
+
+/* Need to create a mini crown SVG in public folder or just use text if missing */
+.crownIconBadge {
+  width: 12px;
+  height: 12px;
+}
+
+.podiumDetailsRank1 {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.podiumNameRank1 {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  margin-bottom: 0.2rem;
+}
+
+.podiumPointsRank1 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Standings */
+.sectionEyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.standingsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.standingsRow {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+.rankNumber {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text-tertiary);
+  width: 20px;
+}
+
+.playerMainInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rowAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.rowName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.movement {
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.moveUp { color: var(--accent-secondary); }
+.moveDown { color: var(--accent-danger); }
+.moveSteady { color: var(--text-tertiary); }
+
+.last5Matches {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.last5Label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.dots {
+  display: flex;
+  gap: 4px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.rowPoints {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
