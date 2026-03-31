@@ -1,15 +1,61 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
 import styles from './MatchDetails.module.css';
+import { getMatch, getMatchEntries, getPlayers } from '../lib/db';
 
 export const MatchDetails: React.FC = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [matchData, setMatchData] = useState<any>(null);
+  const [podium, setPodium] = useState<any[]>([]);
+  const [field, setField] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (!id) return;
+      try {
+        const dbMatch = await getMatch(id);
+        const dbEntries = await getMatchEntries(id);
+        const dbPlayers = await getPlayers();
+
+        if (dbMatch) {
+          const dateStr = dbMatch.createdAt?.toDate ? dbMatch.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently';
+          setMatchData({ name: `MATCH ${dbMatch.matchNumber}`, date: dateStr });
+        }
+
+        const enrichedEntries = dbEntries.map(e => {
+          const p = dbPlayers.find(pl => pl.id === e.playerId);
+          return {
+            ...e,
+            playerName: p ? p.name : 'Unknown',
+            playerAvatar: p ? p.profileImage : 'https://i.pravatar.cc/150'
+          };
+        }).sort((a,b) => a.rank - b.rank);
+
+        const r1 = enrichedEntries.find(e => e.rank === 1);
+        const r2 = enrichedEntries.find(e => e.rank === 2);
+        const r3 = enrichedEntries.find(e => e.rank === 3);
+
+        setPodium([r2, r1, r3]); // [Rank2, Rank1, Rank3]
+        setField(enrichedEntries.filter(e => e.rank > 3));
+
+      } catch (err) {
+        console.error("Failed to load match details", err);
+      }
+      setLoading(false);
+    };
+    fetchDetails();
+  }, [id]);
+
+  if (loading) return <div className="p-4" style={{color: "var(--text-secondary)"}}>Loading Details...</div>;
+  if (!matchData) return <div className="p-4" style={{color: "var(--text-secondary)"}}>Match Not Found.</div>;
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <div className={styles.headerLeft} onClick={() => navigate(-1)}>
+        <div className={styles.headerLeft} onClick={() => navigate(-1)} style={{cursor: 'pointer'}}>
           <ArrowLeft size={24} color="#FFD700" />
           <h1>MATCH RESULTS</h1>
         </div>
@@ -20,96 +66,80 @@ export const MatchDetails: React.FC = () => {
       </header>
       
       <div className={styles.titleSection}>
-         <h2>Weekly Elite</h2>
-         <p>MUMBAI INDIANS VS RCB • 24 OCT</p>
+         <h2>{matchData.name}</h2>
+         <p>{matchData.date}</p>
       </div>
 
       <section className={styles.podiumSection}>
          {/* Rank 1 */}
-         <div className={`${styles.podiumCard} ${styles.rank1Card}`}>
-            <div className={styles.rankBadge1}>1</div>
-            <div className={styles.avatarBlock1}>
-               <img src="https://i.pravatar.cc/150?u=arjun2" className={styles.avatarMain} alt="Arjun Sharma" />
-               <div className={styles.detailsMain}>
-                  <h3>Arjun Sharma</h3>
-                  <p>SCORE: <span className={styles.ptsGold}>942.5</span></p>
-               </div>
-            </div>
-            <div className={styles.rewardBlock1}>
-               <span className={styles.rewardGold}>+12,500</span>
-               <span className={styles.rewardLabel}>📈 TOP 0.1%</span>
-            </div>
-         </div>
+         {podium[1] && (
+           <div className={`${styles.podiumCard} ${styles.rank1Card}`}>
+              <div className={styles.rankBadge1}>1</div>
+              <div className={styles.avatarBlock1}>
+                 <img src={podium[1].playerAvatar} className={styles.avatarMain} alt={podium[1].playerName} />
+                 <div className={styles.detailsMain}>
+                    <h3>{podium[1].playerName}</h3>
+                    <p>SCORE: <span className={styles.ptsGold}>{podium[1].score}</span></p>
+                 </div>
+              </div>
+              <div className={styles.rewardBlock1}>
+                 <span className={styles.rewardGold}>+{podium[1].pointsAwarded} PTS</span>
+                 <span className={styles.rewardLabel}>ELITE</span>
+              </div>
+           </div>
+         )}
          
          <div className={styles.podiumSplitRow}>
             {/* Rank 2 */}
-            <div className={styles.podiumCardSplit}>
-               <div className={styles.rankBadge2}>2</div>
-               <img src="https://i.pravatar.cc/150?u=vikram2" className={styles.avatarSplit} alt="Vikram K." />
-               <h3>Vikram K.</h3>
-               <p className={styles.scorePlain}>884.0</p>
-               <p className={styles.rewardPlain}>+₹7,500</p>
-            </div>
+            {podium[0] && (
+              <div className={styles.podiumCardSplit}>
+                 <div className={styles.rankBadge2}>2</div>
+                 <img src={podium[0].playerAvatar} className={styles.avatarSplit} alt={podium[0].playerName} />
+                 <h3>{podium[0].playerName}</h3>
+                 <p className={styles.scorePlain}>{podium[0].score}</p>
+                 <p className={styles.rewardPlain}>+{podium[0].pointsAwarded} PTS</p>
+              </div>
+            )}
+            
             {/* Rank 3 */}
-            <div className={styles.podiumCardSplit}>
-               <div className={styles.rankBadge3}>3</div>
-               <img src="https://i.pravatar.cc/150?u=rohan2" className={styles.avatarSplit} alt="Rohan Mehta" />
-               <h3>Rohan Mehta</h3>
-               <p className={styles.scorePlainGold}>876.5</p>
-               <p className={styles.rewardPlain}>+₹4,000</p>
-            </div>
+            {podium[2] && (
+              <div className={styles.podiumCardSplit}>
+                 <div className={styles.rankBadge3}>3</div>
+                 <img src={podium[2].playerAvatar} className={styles.avatarSplit} alt={podium[2].playerName} />
+                 <h3>{podium[2].playerName}</h3>
+                 <p className={styles.scorePlainGold}>{podium[2].score}</p>
+                 <p className={styles.rewardPlain}>+{podium[2].pointsAwarded} PTS</p>
+              </div>
+            )}
          </div>
       </section>
 
-      <div className={styles.sectionEyebrow}>THE FIELD</div>
-      
-      <section className={styles.fieldList}>
-         
-         <div className={styles.fieldRow}>
-            <span className={styles.fieldRank}>4</span>
-            <div className={styles.fieldPlayerInfo}>
-               <img src="https://i.pravatar.cc/150?u=priya2" alt="Priya Singh" className={styles.fieldAvatar} />
-               <div className={styles.fieldNameStack}>
-                  <h4>Priya Singh</h4>
-                  <p>812.0 PTS</p>
+      {field.length > 0 && (
+        <>
+          <div className={styles.sectionEyebrow}>THE FIELD</div>
+          <section className={styles.fieldList}>
+             {field.map(f => (
+               <div key={f.id} className={styles.fieldRow}>
+                  <span className={styles.fieldRank}>{f.rank}</span>
+                  <div className={styles.fieldPlayerInfo}>
+                     <img src={f.playerAvatar} alt={f.playerName} className={styles.fieldAvatar} />
+                     <div className={styles.fieldNameStack}>
+                        <h4>{f.playerName}</h4>
+                        <p>{f.score} PTS</p>
+                     </div>
+                  </div>
+                  <div className={styles.fieldPoints}>
+                     {f.pointsAwarded > 0 ? (
+                       <span className={styles.fieldPtsPositive}>+{f.pointsAwarded} PTS</span>
+                     ) : (
+                       <span className={styles.fieldPtsNeutral}>—</span>
+                     )}
+                  </div>
                </div>
-            </div>
-            <div className={styles.fieldPoints}>
-               <span className={styles.fieldPtsPositive}>+₹1,200</span>
-               <span className={styles.fieldPtsLabel}>IN THE MONEY</span>
-            </div>
-         </div>
-         
-         <div className={styles.fieldRow}>
-            <span className={styles.fieldRank}>5</span>
-            <div className={styles.fieldPlayerInfo}>
-               <img src="https://i.pravatar.cc/150?u=kabir2" alt="Kabir Das" className={styles.fieldAvatar} />
-               <div className={styles.fieldNameStack}>
-                  <h4>Kabir Das</h4>
-                  <p>794.5 PTS</p>
-               </div>
-            </div>
-            <div className={styles.fieldPoints}>
-               <span className={styles.fieldPtsPositive}>+₹800</span>
-               <span className={styles.fieldPtsLabel}>IN THE MONEY</span>
-            </div>
-         </div>
-
-         <div className={styles.fieldRow}>
-            <span className={styles.fieldRank}>6</span>
-            <div className={styles.fieldPlayerInfo}>
-               <img src="https://i.pravatar.cc/150?u=zayan2" alt="Zayan Malik" className={styles.fieldAvatar} />
-               <div className={styles.fieldNameStack}>
-                  <h4>Zayan Malik</h4>
-                  <p>780.0 PTS</p>
-               </div>
-            </div>
-            <div className={styles.fieldPoints}>
-               <span className={styles.fieldPtsNeutral}>—</span>
-            </div>
-         </div>
-
-      </section>
+             ))}
+          </section>
+        </>
+      )}
 
     </div>
   );

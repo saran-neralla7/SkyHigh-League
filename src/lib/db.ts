@@ -13,6 +13,7 @@ export interface Player {
     top3: number;
     average: number;
     totalPoints: number;
+    form?: ('W'|'L'|'D')[];
   };
 }
 
@@ -120,10 +121,19 @@ export const saveMatchResults = async (matchNumber: number, results: any[], allP
     const playerToUpdate = allPlayers.find(p => p.id === result.playerId);
     if (playerToUpdate) {
       const pRef = doc(playersRef, playerToUpdate.id);
+      
+      let formResult: 'W'|'L'|'D' = 'L';
+      if (result.rank <= 3) formResult = 'W';
+      else if (result.rank <= 5) formResult = 'D';
+
+      const currentForm = playerToUpdate.metrics.form || [];
+      const newForm = [formResult, ...currentForm].slice(0, 5); // Keep last 5
+
       batch.update(pRef, {
         'metrics.totalPoints': playerToUpdate.metrics.totalPoints + result.pointsAwarded,
         'metrics.wins': playerToUpdate.metrics.wins + (result.rank === 1 ? 1 : 0),
-        'metrics.top3': playerToUpdate.metrics.top3 + (result.rank <= 3 ? 1 : 0)
+        'metrics.top3': playerToUpdate.metrics.top3 + (result.rank <= 3 ? 1 : 0),
+        'metrics.form': newForm
       });
     }
   }

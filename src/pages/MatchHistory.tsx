@@ -4,27 +4,62 @@ import styles from './MatchHistory.module.css';
 import { ArrowLeft, Award, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { getMatches, getMatchEntries, getPlayers } from '../lib/db';
+import type { Player } from '../lib/db';
+
 interface PastMatch {
   id: string;
   name: string;
   date: string;
   topPerformers: string[]; // avatar urls
-  resultPoints: number; // positive or 0
+  resultPoints: number; // For history list, maybe max points given
 }
-
-const mockMatches: PastMatch[] = [
-  { id: '12', name: 'MATCH 12', date: 'Oct 24, 2023', topPerformers: ['https://i.pravatar.cc/150?u=1', 'https://i.pravatar.cc/150?u=2', 'https://i.pravatar.cc/150?u=3'], resultPoints: 50 },
-  { id: '11', name: 'MATCH 11', date: 'Oct 21, 2023', topPerformers: ['https://i.pravatar.cc/150?u=4', 'https://i.pravatar.cc/150?u=5', 'https://i.pravatar.cc/150?u=6'], resultPoints: 0 },
-  { id: '10', name: 'MATCH 10', date: 'Oct 18, 2023', topPerformers: ['https://i.pravatar.cc/150?u=7', 'https://i.pravatar.cc/150?u=8', 'https://i.pravatar.cc/150?u=9'], resultPoints: 30 },
-];
 
 export const MatchHistory: React.FC = () => {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<PastMatch[]>([]);
+  const [totalLeaguesPoints, setTotalLeaguePoints] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMatches(mockMatches);
+    const fetchData = async () => {
+       try {
+         const dbMatches = await getMatches();
+         const dbPlayers = await getPlayers();
+         
+         const totalPts = dbPlayers.reduce((sum, p) => sum + p.metrics.totalPoints, 0);
+         setTotalLeaguePoints(totalPts);
+
+         const formattedMatches = await Promise.all(dbMatches.map(async (m) => {
+            const entries = await getMatchEntries(m.id);
+            const topEntries = entries.filter(e => e.rank <= 3).sort((a,b) => a.rank - b.rank);
+            const avatars = topEntries.map(e => {
+               const player = dbPlayers.find(p => p.id === e.playerId);
+               return player ? player.profileImage : 'https://i.pravatar.cc/150';
+            });
+            const topScore = topEntries.length > 0 ? topEntries[0].pointsAwarded : 0;
+
+            const dateStr = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'}) : 'Recently';
+
+            return {
+               id: m.id,
+               name: `MATCH ${m.matchNumber}`,
+               date: dateStr,
+               topPerformers: avatars,
+               resultPoints: topScore
+            };
+         }));
+         
+         setMatches(formattedMatches);
+       } catch (err) {
+         console.error("Error fetching match history", err);
+       }
+       setLoading(false);
+    };
+    fetchData();
   }, []);
+
+  if (loading) return <div className="p-4 text-gray-400">Loading History...</div>;
 
   return (
     <div className={styles.container}>
@@ -39,11 +74,11 @@ export const MatchHistory: React.FC = () => {
       <section className={styles.seasonSummary}>
         <div className={styles.summaryTop}>
            <div className={styles.matchesCount}>
-             <span className={styles.bigNumber}>42</span>
+             <span className={styles.bigNumber}>{matches.length}</span>
              <span className={styles.label}>MATCHES</span>
            </div>
            <div className={styles.totalPointsText}>
-             <span className={styles.totalValue}>2,855</span>
+             <span className={styles.totalValue}>{totalLeaguesPoints.toLocaleString()}</span>
              <span className={styles.labelTotal}>TOTAL POINTS</span>
            </div>
         </div>
