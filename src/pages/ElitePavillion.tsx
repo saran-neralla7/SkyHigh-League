@@ -31,7 +31,7 @@ export const ElitePavillion: React.FC = () => {
                rank: currentRank,
                name: p.name,
                points: p.metrics.totalPoints.toLocaleString(),
-               avatar: p.profileImage,
+               avatar: p.profileImage?.includes('pravatar') ? '/default-avatar.svg' : (p.profileImage || '/default-avatar.svg'),
                movement: 0,
                form: p.metrics.form || []
             }
@@ -117,8 +117,9 @@ export const ElitePavillion: React.FC = () => {
     } catch (err) {
       console.error("Error sharing:", err);
       // Failsafe Download
-      if (err instanceof Error && err.name !== 'AbortError') {
-        alert("Sharing cancelled or unsupported. Please try again or download via desktop.");
+      const error = err as any;
+      if (error?.name !== 'AbortError') {
+        alert("Capture failed. If an avatar blocked the screenshot, please refresh and try again. Error: " + (error?.message || "CORS/Format Issue"));
       }
     } finally {
       setIsSharing(false);

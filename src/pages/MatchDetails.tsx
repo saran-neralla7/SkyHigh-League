@@ -30,7 +30,7 @@ export const MatchDetails: React.FC = () => {
           return {
             ...e,
             playerName: p ? p.name : 'Unknown',
-            playerAvatar: p ? p.profileImage : 'https://i.pravatar.cc/150'
+            playerAvatar: p ? p.profileImage : '/default-avatar.svg'
           };
         }).sort((a,b) => a.rank - b.rank);
 

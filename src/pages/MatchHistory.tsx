@@ -52,7 +52,7 @@ export const MatchHistory: React.FC = () => {
             const topEntries = entries.filter(e => e.rank <= 3).sort((a,b) => a.rank - b.rank);
             const avatars = topEntries.map(e => {
                const player = dbPlayers.find(p => p.id === e.playerId);
-               return player ? player.profileImage : 'https://i.pravatar.cc/150';
+               return player ? player.profileImage : '/default-avatar.svg';
             });
             const topScore = topEntries.length > 0 ? topEntries[0].pointsAwarded : 0;
             const topRaw = topEntries.length > 0 ? topEntries[0].score : undefined;

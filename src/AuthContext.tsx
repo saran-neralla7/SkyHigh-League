@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       id: newPlayerRef.id,
       name: playerName,
       team: team || '',
-      profileImage: `https://i.pravatar.cc/150?u=${newPlayerRef.id}`,
+      profileImage: '/default-avatar.svg',
       metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0, form: [] }
     };
     await setDoc(newPlayerRef, newPlayer);

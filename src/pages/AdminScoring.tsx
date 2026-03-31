@@ -244,7 +244,7 @@ export const AdminScoring: React.FC = () => {
           <h1>ADMIN PANEL</h1>
         </div>
         <div className={styles.headerRight}>
-          <img src="https://i.pravatar.cc/150?u=admin" alt="Admin" className={styles.adminAvatar} />
+          <img src="/default-avatar.svg" alt="Admin" className={styles.adminAvatar} />
         </div>
       </header>
 

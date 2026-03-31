@@ -52,7 +52,7 @@ export const addPlayer = async (name: string, team?: string) => {
     id: newRef.id,
     name,
     team: team || '',
-    profileImage: `https://i.pravatar.cc/150?u=${newRef.id}`,
+    profileImage: '/default-avatar.svg',
     metrics: { wins: 0, top3: 0, average: 0, totalPoints: 0, form: [] }
   };
   await setDoc(newRef, newPlayer);
