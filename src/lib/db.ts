@@ -99,7 +99,7 @@ export const getPlayerEntries = async (playerId: string): Promise<Entry[]> => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
 }
 
-export const saveMatchResults = async (matchNumber: number, results: any[], allPlayers: Player[], matchTitle?: string) => {
+export const saveMatchResults = async (matchNumber: number, results: any[], matchTitle?: string) => {
   const batch = writeBatch(db);
   
   // Create Match Document
@@ -126,28 +126,13 @@ export const saveMatchResults = async (matchNumber: number, results: any[], allP
       previousPoints: result.prevPoints
     });
 
-    // Player metrics
-    const playerToUpdate = allPlayers.find(p => p.id === result.playerId);
-    if (playerToUpdate) {
-      const pRef = doc(playersRef, playerToUpdate.id);
-      
-      let formResult: 'W'|'L'|'D' = 'L';
-      if (result.rank <= 3) formResult = 'W';
-      else if (result.rank <= 5) formResult = 'D';
-
-      const currentForm = playerToUpdate.metrics.form || [];
-      const newForm = [formResult, ...currentForm].slice(0, 5);
-
-      batch.update(pRef, {
-        'metrics.totalPoints': playerToUpdate.metrics.totalPoints + result.pointsAwarded,
-        'metrics.wins': playerToUpdate.metrics.wins + (result.rank === 1 ? 1 : 0),
-        'metrics.top3': playerToUpdate.metrics.top3 + (result.rank <= 3 ? 1 : 0),
-        'metrics.form': newForm
-      });
-    }
+    // We no longer manually calculate player metrics here.
+    // We strictly write the match and entries to the DB, 
+    // then call a global recalculator to absolutely guarantee 100% sync.
   }
 
   await batch.commit();
+  await recalculateAllPlayerMetrics();
 };
 
 export const deletePlayer = async (playerId: string) => {
@@ -159,23 +144,63 @@ export const deleteMatch = async (matchId: string) => {
   const batch = writeBatch(db);
   const matchEntries = await getMatchEntries(matchId);
   
-  // Deduct points from players
+  // Delete entries without touching players manually
   for (const entry of matchEntries) {
-    const pRef = doc(playersRef, entry.playerId);
-    const pSnap = await getDoc(pRef);
-    if (pSnap.exists()) {
-      const pData = pSnap.data() as Player;
-      batch.update(pRef, {
-        'metrics.totalPoints': Math.max(0, pData.metrics.totalPoints - entry.pointsAwarded),
-        'metrics.wins': Math.max(0, pData.metrics.wins - (entry.rank === 1 ? 1 : 0)),
-        'metrics.top3': Math.max(0, pData.metrics.top3 - (entry.rank <= 3 ? 1 : 0)),
-      });
-    }
-    batch.delete(doc(entriesRef, entry.id)); // Delete entry
+    batch.delete(doc(entriesRef, entry.id));
   }
   
   batch.delete(doc(matchesRef, matchId)); // Delete match
   await batch.commit();
+  
+  // Recalculate precisely after everything is deleted
+  await recalculateAllPlayerMetrics();
+};
+
+export const recalculateAllPlayerMetrics = async () => {
+   const pSnapshot = await getDocs(playersRef);
+   const players = pSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
+   
+   const eSnapshot = await getDocs(entriesRef);
+   const allEntries = eSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
+
+   const mSnapshot = await getDocs(matchesRef);
+   const allMatches = mSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
+   
+   const batch = writeBatch(db);
+
+   for (const p of players) {
+      const pEntries = allEntries.filter(e => e.playerId === p.id);
+      
+      // Sort entries by Match Date to get correct Form
+      pEntries.sort((a, b) => {
+         const ma = allMatches.find(m => m.id === a.matchId);
+         const mb = allMatches.find(m => m.id === b.matchId);
+         const numA = ma ? ma.matchNumber : 0;
+         const numB = mb ? mb.matchNumber : 0;
+         return numB - numA; // Descending
+      });
+
+      const totalPoints = pEntries.reduce((sum, e) => sum + e.pointsAwarded, 0);
+      const wins = pEntries.filter(e => e.rank === 1).length;
+      const top3 = pEntries.filter(e => e.rank <= 3).length;
+      const avg = pEntries.length > 0 ? Math.round(totalPoints / pEntries.length) : 0;
+      
+      const form = pEntries.slice(0, 5).map(e => {
+         if (e.rank <= 3) return 'W';
+         if (e.rank <= 5) return 'D';
+         return 'L';
+      });
+
+      batch.update(doc(playersRef, p.id), {
+         'metrics.totalPoints': totalPoints,
+         'metrics.wins': wins,
+         'metrics.top3': top3,
+         'metrics.average': avg,
+         'metrics.form': form
+      });
+   }
+   
+   await batch.commit();
 };
 
 export const updatePlayerProfile = async (playerId: string, name: string, team: string) => {

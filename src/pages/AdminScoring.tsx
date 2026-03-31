@@ -193,7 +193,7 @@ export const AdminScoring: React.FC = () => {
        if (editingMatchId) {
          await deleteMatch(editingMatchId);
        }
-       await saveMatchResults(Number(matchNumber), results, players, matchTitle);
+       await saveMatchResults(Number(matchNumber), results, matchTitle);
        setModalConfig({ isOpen: true, title: "Match Saved", message: "Match results calculated and saved successfully!" });
        setScores({});
        setMatchNumber(String(Number(matchNumber) + 1));
