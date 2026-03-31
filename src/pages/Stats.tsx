@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './Stats.module.css';
-import { TrendingUp, Trophy, Target, Award, Zap } from 'lucide-react';
+import { TrendingUp, Trophy, Target, Award, Zap, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPlayers, getMatches, getPlayerEntries } from '../lib/db';
 import type { Player } from '../lib/db';
@@ -163,6 +163,46 @@ export const Stats: React.FC = () => {
           {(!player.metrics.form || player.metrics.form.length === 0) && (
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No matches played yet</span>
           )}
+        </div>
+      </section>
+
+      {/* Badges & Achievements */}
+      <section className={styles.badgesSection}>
+        <h3><Award size={16} /> Achievements</h3>
+        <div className={styles.badgesGrid}>
+           {player.metrics.wins >= 1 && (
+             <div className={styles.badgeItem}>
+               <div className={styles.badgeIconGold}><Trophy size={20}/></div>
+               <span className={styles.badgeTitle}>First Blood</span>
+               <span className={styles.badgeDesc}>Secured an MVP rank</span>
+             </div>
+           )}
+           {player.metrics.wins >= 3 && (
+             <div className={styles.badgeItem}>
+               <div className={styles.badgeIconDiamond}><Crown size={20}/></div>
+               <span className={styles.badgeTitle}>Dominator</span>
+               <span className={styles.badgeDesc}>3+ MVP Ranks</span>
+             </div>
+           )}
+           {player.metrics.top3 >= 5 && (
+             <div className={styles.badgeItem}>
+               <div className={styles.badgeIconSilver}><Award size={20}/></div>
+               <span className={styles.badgeTitle}>Podium Regular</span>
+               <span className={styles.badgeDesc}>5+ Top-3 finishes</span>
+             </div>
+           )}
+           {(player.metrics.form || []).slice(0,3).every(f => f === 'W') && (player.metrics.form || []).length >= 3 && (
+             <div className={styles.badgeItem}>
+               <div className={styles.badgeIconFire}><Zap size={20}/></div>
+               <span className={styles.badgeTitle}>Hot Streak</span>
+               <span className={styles.badgeDesc}>3 consecutive podiums</span>
+             </div>
+           )}
+           
+           {/* Empty State */}
+           {player.metrics.wins === 0 && player.metrics.top3 < 5 && (!(player.metrics.form || []).slice(0,3).every(f => f === 'W') || (player.metrics.form || []).length < 3) && (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', gridColumn: 'span 2' }}>Play more matches to unlock achievements!</p>
+           )}
         </div>
       </section>
 

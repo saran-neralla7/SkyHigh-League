@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MatchHistory.module.css';
 import { ArrowLeft, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getMatches, getMatchEntries, getPlayers } from '../lib/db';
+import { getMatches, getMatchEntries, getPlayers, getPlayerEntries } from '../lib/db';
 import { MatrixTable } from '../components/MatrixTable';
+import { useAuth } from '../AuthContext';
 
 interface PastMatch {
   id: string;
@@ -19,8 +20,10 @@ interface PastMatch {
 
 export const MatchHistory: React.FC = () => {
   const navigate = useNavigate();
+  const { playerData } = useAuth();
   const [matches, setMatches] = useState<PastMatch[]>([]);
-  const [totalLeaguePoints, setTotalLeaguePoints] = useState(0);
+  const [headerPoints, setHeaderPoints] = useState(0);
+  const [headerLabel, setHeaderLabel] = useState('TOTAL POINTS');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,8 +32,16 @@ export const MatchHistory: React.FC = () => {
          const dbMatches = await getMatches();
          const dbPlayers = await getPlayers();
          
-         const totalPts = dbPlayers.reduce((sum, p) => sum + p.metrics.totalPoints, 0);
-         setTotalLeaguePoints(totalPts);
+         if (playerData) {
+            const myEntries = await getPlayerEntries(playerData.id);
+            const myTotalRaw = myEntries.reduce((sum, e) => sum + e.score, 0);
+            setHeaderPoints(myTotalRaw);
+            setHeaderLabel('RAW POINTS');
+         } else {
+            const totalPts = dbPlayers.reduce((sum, p) => sum + p.metrics.totalPoints, 0);
+            setHeaderPoints(totalPts);
+            setHeaderLabel('ELITE POINTS');
+         }
 
          const formattedMatches = await Promise.all(dbMatches.map(async (m) => {
             const entries = await getMatchEntries(m.id);
@@ -43,6 +54,10 @@ export const MatchHistory: React.FC = () => {
             const topRaw = topEntries.length > 0 ? topEntries[0].score : undefined;
             const mvpPlayer = topEntries.length > 0 ? dbPlayers.find(p => p.id === topEntries[0].playerId) : null;
 
+            const myEntry = playerData ? entries.find(e => e.playerId === playerData.id) : null;
+            const displayScore = myEntry ? myEntry.pointsAwarded : topScore;
+            const displayRaw = myEntry ? myEntry.score : topRaw;
+
             const dateStr = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'}) : 'Recently';
 
             return {
@@ -51,8 +66,8 @@ export const MatchHistory: React.FC = () => {
                subtitle: (m as any).matchTitle || '',
                date: dateStr,
                topPerformers: avatars,
-               resultPoints: topScore,
-               rawScore: topRaw,
+               resultPoints: displayScore,
+               rawScore: displayRaw,
                mvpName: mvpPlayer?.name
             };
          }));
@@ -89,8 +104,8 @@ export const MatchHistory: React.FC = () => {
              <span className={styles.label}>MATCHES</span>
            </div>
            <div className={styles.totalPointsText}>
-             <span className={styles.totalValue}>{totalLeaguePoints.toLocaleString()}</span>
-             <span className={styles.labelTotal}>TOTAL POINTS</span>
+             <span className={styles.totalValue}>{headerPoints.toLocaleString()}</span>
+             <span className={styles.labelTotal}>{headerLabel}</span>
            </div>
         </div>
         <div className={styles.progressBarWrapper}>
@@ -128,7 +143,7 @@ export const MatchHistory: React.FC = () => {
 
              <div className={styles.resultDetails}>
                 <span className={match.resultPoints > 0 ? styles.pointsPositive : styles.pointsNeutral}>
-                  {match.resultPoints > 0 ? `+${match.resultPoints}` : match.resultPoints} <span className={styles.ptsLabel}>PTS</span>
+                  {match.resultPoints > 0 ? `+${match.resultPoints}` : `+0`} <span className={styles.ptsLabel}>PTS</span>
                 </span>
                 <span className={styles.resultStatus}>
                   {match.rawScore !== undefined ? `${match.rawScore} RAW SCORE` : (match.resultPoints > 0 ? 'ELITE REWARD' : 'NO POINTS')}
