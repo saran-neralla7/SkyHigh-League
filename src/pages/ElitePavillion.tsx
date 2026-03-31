@@ -147,15 +147,13 @@ export const ElitePavillion: React.FC = () => {
         </div>
       )}
 
-      {/* Hidden Landscape Share Card */}
-      <div 
-        ref={shareCardRef}
-        style={{
-          position: 'absolute',
-          left: '-9999px',
-          top: 0,
-          width: '1200px',
-          height: '630px',
+      {/* Hidden Landscape Share Card (Fixed in background to prevent Safari culling) */}
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -1000, pointerEvents: 'none' }}>
+        <div 
+          ref={shareCardRef}
+          style={{
+            width: '1200px',
+            height: '630px',
           background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
           display: 'flex',
           flexDirection: 'column',
@@ -212,6 +210,7 @@ export const ElitePavillion: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
 
       <header className={styles.header}>
