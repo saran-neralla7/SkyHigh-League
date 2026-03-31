@@ -3,6 +3,8 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 import { AnimatePresence, motion } from 'framer-motion';
 import styles from './Layout.module.css';
+import { useAuth } from '../AuthContext';
+import { Login } from '../pages/Login';
 
 const pageVariants = {
   initial: { opacity: 0, y: 10, scale: 0.98 },
@@ -17,8 +19,13 @@ const pageTransition: any = {
 };
 
 export const Layout: React.FC = () => {
+  const { currentUser } = useAuth();
   const location = useLocation();
   
+  if (!currentUser) {
+    return <Login />;
+  }
+
   return (
     <div className={styles.appContainer}>
       <AnimatePresence mode="wait">
