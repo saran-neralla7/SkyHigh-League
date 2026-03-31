@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { getPlayers, getMatches, getPlayerEntries } from '../lib/db';
 import type { Player } from '../lib/db';
 import { ImageUploader } from '../components/ImageUploader';
+import { TeamBadge } from '../components/TeamBadge';
 
 export const Stats: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -122,7 +123,7 @@ export const Stats: React.FC = () => {
         </div>
         <div className={styles.profileInfo}>
           <h2>{player.name}</h2>
-          <p>{player.team || 'FREE AGENT'}</p>
+          <div style={{ margin: '0.25rem 0 0.5rem 0' }}><TeamBadge team={player.team} /></div>
           <span className={styles.rankTag}>RANK #{playerRank}</span>
         </div>
       </motion.div>

@@ -5,6 +5,7 @@ import { Users, Trophy, TrendingUp, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
+import { TeamBadge } from '../components/TeamBadge';
 
 export const Squad: React.FC = () => {
   const navigate = useNavigate();
@@ -54,7 +55,10 @@ export const Squad: React.FC = () => {
           <div className={styles.mvpInfo}>
             <span className={styles.mvpTag}>CURRENT LEADER</span>
             <h2>{topPlayer.name}</h2>
-            <p>{topPlayer.team || 'FREE AGENT'} • {topPlayer.metrics.totalPoints} PTS</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+              <TeamBadge team={topPlayer.team} />
+              <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>• {topPlayer.metrics.totalPoints} PTS</span>
+            </div>
           </div>
         </motion.div>
       )}
@@ -79,7 +83,7 @@ export const Squad: React.FC = () => {
                 <img src={player.profileImage} alt={player.name} className={styles.playerAvatar} />
                 <div className={styles.playerDetails}>
                   <h3>{player.name}</h3>
-                  <p>{player.team || 'FREE AGENT'}</p>
+                  <div style={{ marginTop: '0.25rem' }}><TeamBadge team={player.team} /></div>
                 </div>
               </div>
               <div className={styles.playerRight}>
