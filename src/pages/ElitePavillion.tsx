@@ -86,43 +86,40 @@ export const ElitePavillion: React.FC = () => {
   const handleWhatsAppShare = async () => {
     if (!containerRef.current) return;
     
-    // Text Fallback
-    const generateTextFallback = () => {
-      let text = "🏆 *SkyHigh Fantasy League Leaderboard* 🏆\n\n";
-      standings.slice(0, 10).forEach(p => {
-        text += `${p.rank}. ${p.name} - ${p.points} PTS\n`;
-      });
-      text += "\nView full standings at: " + window.location.origin;
-      return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    };
-
     try {
       setIsSharing(true);
-      // Let React render any conditional states if needed
       await new Promise(r => setTimeout(r, 100));
 
       const blob = await toBlob(containerRef.current, {
         cacheBust: true,
-        style: { background: 'var(--bg-dark)' }, // Ensure background renders
+        style: { background: 'var(--bg-dark)' },
       });
 
       if (!blob) throw new Error("Could not generate image");
 
-      const file = new File([blob], 'leaderboard.png', { type: 'image/png' });
+      const file = new File([blob], 'SkyHigh_Leaderboard.png', { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'SkyHigh Fantasy League Leaderboard',
-          text: 'Check out the latest standings!',
-          files: [file],
+          files: [file] // Strictly pass ONLY the file to prevent WhatsApp from dropping the image in favor of text
         });
       } else {
-        // Fallback for desktop Safari/Chrome
-        window.open(generateTextFallback(), '_blank');
+        // Fallback: forcefully download the image for desktop or unsupported browsers
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'SkyHigh_Leaderboard.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
     } catch (err) {
       console.error("Error sharing:", err);
-      window.open(generateTextFallback(), '_blank');
+      // Failsafe Download
+      if (err instanceof Error && err.name !== 'AbortError') {
+        alert("Sharing cancelled or unsupported. Please try again or download via desktop.");
+      }
     } finally {
       setIsSharing(false);
     }
