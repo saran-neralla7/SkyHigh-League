@@ -208,3 +208,26 @@ export const updatePlayerProfile = async (playerId: string, name: string, team: 
   await updateDoc(pRef, { name, team: team || '' });
 };
 
+export const hardResetLeague = async () => {
+  const batch = writeBatch(db);
+  
+  const mSnap = await getDocs(matchesRef);
+  mSnap.forEach(d => batch.delete(d.ref));
+  
+  const eSnap = await getDocs(entriesRef);
+  eSnap.forEach(d => batch.delete(d.ref));
+  
+  const pSnap = await getDocs(playersRef);
+  pSnap.forEach(d => {
+    batch.update(d.ref, {
+      'metrics.totalPoints': 0,
+      'metrics.wins': 0,
+      'metrics.top3': 0,
+      'metrics.average': 0,
+      'metrics.form': []
+    });
+  });
+  
+  await batch.commit();
+};
+

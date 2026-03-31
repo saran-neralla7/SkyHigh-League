@@ -4,6 +4,8 @@ import styles from './MatchHistory.module.css';
 import { ArrowLeft, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getMatches, getMatchEntries, getPlayers, getPlayerEntries } from '../lib/db';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { MatrixTable } from '../components/MatrixTable';
 import { useAuth } from '../AuthContext';
 
@@ -38,9 +40,11 @@ export const MatchHistory: React.FC = () => {
             setHeaderPoints(myTotalRaw);
             setHeaderLabel('RAW POINTS');
          } else {
-            const totalPts = dbPlayers.reduce((sum, p) => sum + p.metrics.totalPoints, 0);
-            setHeaderPoints(totalPts);
-            setHeaderLabel('ELITE POINTS');
+            const eSnap = await getDocs(collection(db, 'entries'));
+            const allE = eSnap.docs.map(d => d.data());
+            const totalLeagueRaw = allE.reduce((sum, e) => sum + e.score, 0);
+            setHeaderPoints(totalLeagueRaw);
+            setHeaderLabel('LEAGUE RAW SCORES');
          }
 
          const formattedMatches = await Promise.all(dbMatches.map(async (m) => {

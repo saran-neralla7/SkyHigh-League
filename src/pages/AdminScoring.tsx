@@ -3,7 +3,7 @@ import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './AdminScoring.module.css';
 import { Crown, Loader2, Mail, Lock, Trash2 } from 'lucide-react';
-import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries } from '../lib/db';
+import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
 
@@ -215,6 +215,22 @@ export const AdminScoring: React.FC = () => {
       <div className="loader"></div>
     </div>
   );
+
+  const handleHardReset = async () => {
+    setLoading(true);
+    try {
+      await hardResetLeague();
+      setModalConfig({ isOpen: true, title: "League Reset", message: "All matches, entries, and points have been completely wiped. Players are back to zero." });
+      const freshPlayers = await getPlayers();
+      const freshMatches = await getMatches();
+      setPlayers(freshPlayers);
+      setMatches(freshMatches);
+    } catch (e) {
+      console.error(e);
+      setModalConfig({ isOpen: true, title: "Error", message: "Could not reset league." });
+    }
+    setLoading(false);
+  };
 
   return (
     <div className={styles.container}>
@@ -493,6 +509,31 @@ export const AdminScoring: React.FC = () => {
                ))}
                {players.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No players found.</p>}
              </div>
+           </div>
+           
+           {/* Danger Zone */}
+           <div style={{ marginTop: '3rem', padding: '1rem', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)' }}>
+             <p className={styles.cardEyebrow} style={{ color: '#ef4444' }}>DANGER ZONE</p>
+             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+               This will permanently delete ALL matches and entirely reset all player 
+               points, wins, and history back to 0. This cannot be undone.
+             </p>
+             <button 
+               onClick={() => setModalConfig({ 
+                 isOpen: true, 
+                 title: "FACTORY RESET", 
+                 message: "Are you absolutely sure you want to nuke the entire league? All matches and points will be destroyed forever.",
+                 onConfirm: handleHardReset
+               })}
+               style={{ 
+                 width: '100%', padding: '0.75rem', borderRadius: '8px', 
+                 background: '#ef4444', color: '#fff', border: 'none', 
+                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+               }}
+             >
+               <Trash2 size={16} /> FACTORY RESET LEAGUE
+             </button>
            </div>
         </section>
       )}
