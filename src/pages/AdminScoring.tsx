@@ -3,7 +3,7 @@ import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './AdminScoring.module.css';
 import { Crown, Loader2, Mail, Lock, Trash2 } from 'lucide-react';
-import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer } from '../lib/db';
+import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
 
@@ -22,6 +22,12 @@ export const AdminScoring: React.FC = () => {
   const [newPlayerPassword, setNewPlayerPassword] = useState('');
   const [isAddingData, setIsAddingData] = useState(false);
   const [activeTab, setActiveTab] = useState<'scoring'|'players'|'manage'>('scoring');
+  
+  // Edit State
+  const [editingPlayerId, setEditingPlayerId] = useState<string|null>(null);
+  const [editPlayerName, setEditPlayerName] = useState('');
+  const [editPlayerTeam, setEditPlayerTeam] = useState('');
+  const [editingMatchId, setEditingMatchId] = useState<string|null>(null);
   
   // Manage State
   const [matches, setMatches] = useState<Match[]>([]);
@@ -81,6 +87,42 @@ export const AdminScoring: React.FC = () => {
         setLoading(false);
       }
     });
+  };
+
+  const startEditPlayer = (p: Player) => {
+    setEditingPlayerId(p.id);
+    setEditPlayerName(p.name);
+    setEditPlayerTeam(p.team || '');
+  };
+
+  const saveEditPlayer = async () => {
+    if (!editingPlayerId) return;
+    setLoading(true);
+    await updatePlayerProfile(editingPlayerId, editPlayerName, editPlayerTeam);
+    setEditingPlayerId(null);
+    const freshPlayers = await getPlayers();
+    setPlayers(freshPlayers);
+    setLoading(false);
+  };
+
+  const handleEditMatch = async (m: Match) => {
+    setLoading(true);
+    try {
+      const entries = await getMatchEntries(m.id);
+      const tempScores: Record<string, string> = {};
+      entries.forEach(e => {
+        tempScores[e.playerId] = String(e.score);
+      });
+      setScores(tempScores);
+      setMatchNumber(String(m.matchNumber));
+      setMatchTitle((m as any).matchTitle || '');
+      setEditingMatchId(m.id);
+      setActiveTab('scoring');
+    } catch (e) {
+       console.error(e);
+       setModalConfig({ isOpen: true, title: "Error", message: "Could not load match data for editing." });
+    }
+    setLoading(false);
   };
 
   const handleCreatePlayerAccount = async () => {
@@ -147,11 +189,16 @@ export const AdminScoring: React.FC = () => {
      });
 
      try {
+       // If editing an existing match, we first delete the old one so points perfectly recalculate 
+       if (editingMatchId) {
+         await deleteMatch(editingMatchId);
+       }
        await saveMatchResults(Number(matchNumber), results, players, matchTitle);
        setModalConfig({ isOpen: true, title: "Match Saved", message: "Match results calculated and saved successfully!" });
        setScores({});
        setMatchNumber(String(Number(matchNumber) + 1));
        setMatchTitle('');
+       setEditingMatchId(null);
        const freshPlayers = await getPlayers();
        const freshMatches = await getMatches();
        setPlayers(freshPlayers);
@@ -233,7 +280,13 @@ export const AdminScoring: React.FC = () => {
         <>
           <section className={styles.identityGroup}>
             <div className={styles.identityCard}>
-               <p className={styles.cardEyebrow}>MATCH DATA</p>
+               <p className={styles.cardEyebrow}>{editingMatchId ? "EDITING MATCH" : "MATCH DATA"}</p>
+               {editingMatchId && (
+                 <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '1rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                   <p style={{ color: '#ef4444', fontSize: '0.75rem' }}>You are currently <strong>Fixing Match Data</strong>. Saving will overwrite the old points for this match.</p>
+                   <button onClick={() => { setEditingMatchId(null); setScores({}); setMatchTitle(''); }} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: '#ef4444', textDecoration: 'underline', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel Edit</button>
+                 </div>
+               )}
                <label>Match Number</label>
                <div className={styles.matchNumberInputWrapper}>
                  <input 
@@ -382,9 +435,14 @@ export const AdminScoring: React.FC = () => {
                      <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Match {m.matchNumber}</p>
                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{(m as any).matchTitle || ''}</p>
                    </div>
-                   <button onClick={() => confirmDeleteMatch(m)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
-                     <Trash2 size={16} />
-                   </button>
+                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                     <button onClick={() => handleEditMatch(m)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                       EDIT
+                     </button>
+                     <button onClick={() => confirmDeleteMatch(m)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
+                       <Trash2 size={16} />
+                     </button>
+                   </div>
                  </div>
                ))}
                {matches.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No matches found.</p>}
@@ -395,17 +453,42 @@ export const AdminScoring: React.FC = () => {
              <p className={styles.cardEyebrow}>MANAGE PLAYERS ({players.length})</p>
              <div style={{ marginTop: '0.75rem' }}>
                {players.map(p => (
-                 <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                     <img src={p.profileImage} alt={p.name} style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                     <div>
-                       <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</p>
-                       <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.metrics.totalPoints} PTS</p>
+                 <div key={p.id} style={{ display: 'flex', flexDirection: 'column', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                   
+                   {editingPlayerId === p.id ? (
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                       <input 
+                         type="text" value={editPlayerName} onChange={(e) => setEditPlayerName(e.target.value)}
+                         className={styles.matchNumberInput} style={{ padding: '0.5rem' }} placeholder="Name"
+                       />
+                       <input 
+                         type="text" value={editPlayerTeam} onChange={(e) => setEditPlayerTeam(e.target.value)}
+                         className={styles.matchNumberInput} style={{ padding: '0.5rem' }} placeholder="Team"
+                       />
+                       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                         <button onClick={saveEditPlayer} style={{ background: 'var(--accent-primary)', color: '#000', border: 'none', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Save</button>
+                         <button onClick={() => setEditingPlayerId(null)} style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Cancel</button>
+                       </div>
                      </div>
-                   </div>
-                   <button onClick={() => confirmDeletePlayer(p)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
-                     <Trash2 size={16} />
-                   </button>
+                   ) : (
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                         <img src={p.profileImage} alt={p.name} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                         <div>
+                           <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</p>
+                           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.metrics.totalPoints} PTS</p>
+                         </div>
+                       </div>
+                       <div style={{ display: 'flex', gap: '0.5rem' }}>
+                         <button onClick={() => startEditPlayer(p)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                           EDIT
+                         </button>
+                         <button onClick={() => confirmDeletePlayer(p)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
+                           <Trash2 size={16} />
+                         </button>
+                       </div>
+                     </div>
+                   )}
                  </div>
                ))}
                {players.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No players found.</p>}

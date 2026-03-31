@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, query, orderBy, where, Timestamp, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, orderBy, where, Timestamp, getDoc, writeBatch, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Types
@@ -176,5 +176,10 @@ export const deleteMatch = async (matchId: string) => {
   
   batch.delete(doc(matchesRef, matchId)); // Delete match
   await batch.commit();
+};
+
+export const updatePlayerProfile = async (playerId: string, name: string, team: string) => {
+  const pRef = doc(playersRef, playerId);
+  await updateDoc(pRef, { name, team: team || '' });
 };
 
