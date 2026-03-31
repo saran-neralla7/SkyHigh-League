@@ -3,12 +3,15 @@ import styles from './ElitePavillion.module.css';
 import { Bell, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { toBlob } from 'html-to-image';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
 
 export const ElitePavillion: React.FC = () => {
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSharing, setIsSharing] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -80,14 +83,49 @@ export const ElitePavillion: React.FC = () => {
     );
   }
 
-  const handleWhatsAppShare = () => {
-    let text = "🏆 *SkyHigh Fantasy League Leaderboard* 🏆\n\n";
-    standings.slice(0, 10).forEach(p => {
-      text += `${p.rank}. ${p.name} - ${p.points} PTS\n`;
-    });
-    text += "\nView full standings at: " + window.location.origin;
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  const handleWhatsAppShare = async () => {
+    if (!containerRef.current) return;
+    
+    // Text Fallback
+    const generateTextFallback = () => {
+      let text = "🏆 *SkyHigh Fantasy League Leaderboard* 🏆\n\n";
+      standings.slice(0, 10).forEach(p => {
+        text += `${p.rank}. ${p.name} - ${p.points} PTS\n`;
+      });
+      text += "\nView full standings at: " + window.location.origin;
+      return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    };
+
+    try {
+      setIsSharing(true);
+      // Let React render any conditional states if needed
+      await new Promise(r => setTimeout(r, 100));
+
+      const blob = await toBlob(containerRef.current, {
+        cacheBust: true,
+        style: { background: 'var(--bg-dark)' }, // Ensure background renders
+      });
+
+      if (!blob) throw new Error("Could not generate image");
+
+      const file = new File([blob], 'leaderboard.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'SkyHigh Fantasy League Leaderboard',
+          text: 'Check out the latest standings!',
+          files: [file],
+        });
+      } else {
+        // Fallback for desktop Safari/Chrome
+        window.open(generateTextFallback(), '_blank');
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+      window.open(generateTextFallback(), '_blank');
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   // podium[0] = Rank 2, podium[1] = Rank 1, podium[2] = Rank 3
@@ -95,7 +133,15 @@ export const ElitePavillion: React.FC = () => {
   const rest = standings.length > 3 ? standings.slice(3) : [];
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} ref={containerRef} style={{ position: 'relative' }}>
+      
+      {/* Visual Overlay to tell user sharing is in progress */}
+      {isSharing && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: '#EAB308', fontWeight: 'bold' }}>Capturing Leaderboard...</span>
+        </div>
+      )}
+
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.hamburger}>
