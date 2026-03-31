@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './Stats.module.css';
@@ -6,9 +7,11 @@ import { TrendingUp, Trophy, Target, Award, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPlayers, getMatches, getPlayerEntries } from '../lib/db';
 import type { Player } from '../lib/db';
+import { ImageUploader } from '../components/ImageUploader';
 
 export const Stats: React.FC = () => {
-  const { currentUser, playerData } = useAuth();
+  const { id } = useParams<{ id: string }>();
+  const { currentUser, playerData, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [player, setPlayer] = useState<Player | null>(null);
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
@@ -22,11 +25,14 @@ export const Stats: React.FC = () => {
         const players = await getPlayers();
         setAllPlayers(players);
 
-        // Find the current user's player
+        // Find the target player (either from URL id or logged in user)
         let foundPlayer: Player | null = null;
-        if (playerData) {
+        if (id) {
+          foundPlayer = players.find(p => p.id === id) || null;
+        } else if (playerData) {
           foundPlayer = players.find(p => p.id === playerData.id) || null;
         }
+        
         if (!foundPlayer && players.length > 0) {
           // Fallback: show top player for admin
           foundPlayer = players[0];
@@ -58,10 +64,14 @@ export const Stats: React.FC = () => {
     };
 
     fetchStats();
-  }, [currentUser, playerData]);
+  }, [currentUser, playerData, id]);
 
   if (!currentUser) return <Login />;
-  if (loading) return <div className="p-4" style={{ color: 'var(--text-secondary)' }}>Loading Stats...</div>;
+  if (loading) return (
+    <div className={styles.container} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className="loader" style={{ alignSelf: 'center' }}></div>
+    </div>
+  );
 
   if (!player) {
     return (
@@ -98,7 +108,18 @@ export const Stats: React.FC = () => {
         className={styles.profileCard}
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       >
-        <img src={player.profileImage} alt={player.name} className={styles.profileAvatar} />
+        <div style={{ marginRight: '1rem' }}>
+          {(isAdmin || (playerData && playerData.id === player.id)) ? (
+            <ImageUploader 
+              playerId={player.id} 
+              currentImage={player.profileImage} 
+              onUploadSuccess={(url) => setPlayer({...player, profileImage: url})} 
+              size={80} 
+            />
+          ) : (
+            <img src={player.profileImage} alt={player.name} className={styles.profileAvatar} style={{ width: 80, height: 80, borderRadius: '50%' }} />
+          )}
+        </div>
         <div className={styles.profileInfo}>
           <h2>{player.name}</h2>
           <p>{player.team || 'FREE AGENT'}</p>

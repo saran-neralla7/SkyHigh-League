@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, query, orderBy, where, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, orderBy, where, Timestamp, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Types
@@ -88,8 +88,9 @@ export const getMatches = async (): Promise<Match[]> => {
 
 // Get entries for a match
 export const getMatchEntries = async (matchId: string): Promise<Entry[]> => {
-  const snapshot = await getDocs(query(entriesRef, where('matchId', '==', matchId), orderBy('rank', 'asc')));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
+  const snapshot = await getDocs(query(entriesRef, where('matchId', '==', matchId)));
+  const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Entry));
+  return entries.sort((a,b) => a.rank - b.rank);
 }
 
 // Get all entries for a specific player across all matches
@@ -148,3 +149,32 @@ export const saveMatchResults = async (matchNumber: number, results: any[], allP
 
   await batch.commit();
 };
+
+export const deletePlayer = async (playerId: string) => {
+  const pRef = doc(playersRef, playerId);
+  await deleteDoc(pRef);
+};
+
+export const deleteMatch = async (matchId: string) => {
+  const batch = writeBatch(db);
+  const matchEntries = await getMatchEntries(matchId);
+  
+  // Deduct points from players
+  for (const entry of matchEntries) {
+    const pRef = doc(playersRef, entry.playerId);
+    const pSnap = await getDoc(pRef);
+    if (pSnap.exists()) {
+      const pData = pSnap.data() as Player;
+      batch.update(pRef, {
+        'metrics.totalPoints': Math.max(0, pData.metrics.totalPoints - entry.pointsAwarded),
+        'metrics.wins': Math.max(0, pData.metrics.wins - (entry.rank === 1 ? 1 : 0)),
+        'metrics.top3': Math.max(0, pData.metrics.top3 - (entry.rank <= 3 ? 1 : 0)),
+      });
+    }
+    batch.delete(doc(entriesRef, entry.id)); // Delete entry
+  }
+  
+  batch.delete(doc(matchesRef, matchId)); // Delete match
+  await batch.commit();
+};
+

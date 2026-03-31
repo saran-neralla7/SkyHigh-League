@@ -12,3 +12,24 @@
   max-width: 600px; /* Mobile first, constrain on desktop */
   margin: 0 auto;
 }
+
+.logoutBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.logoutBtn:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}

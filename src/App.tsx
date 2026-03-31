@@ -5,7 +5,7 @@ import { ElitePavillion } from './pages/ElitePavillion';
 import { MatchHistory } from './pages/MatchHistory';
 import { AdminScoring } from './pages/AdminScoring';
 import { MatchDetails } from './pages/MatchDetails';
-import { PlayerProfile } from './pages/PlayerProfile';
+
 import { Stats } from './pages/Stats';
 import { Squad } from './pages/Squad';
 
@@ -20,7 +20,7 @@ function App() {
           <Route path="squad" element={<Squad />} />
           <Route path="admin" element={<AdminScoring />} />
           <Route path="match/:id" element={<MatchDetails />} />
-          <Route path="profile/:id" element={<PlayerProfile />} />
+          <Route path="profile/:id" element={<Stats />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

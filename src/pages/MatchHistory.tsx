@@ -4,6 +4,7 @@ import styles from './MatchHistory.module.css';
 import { ArrowLeft, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getMatches, getMatchEntries, getPlayers } from '../lib/db';
+import { MatrixTable } from '../components/MatrixTable';
 
 interface PastMatch {
   id: string;
@@ -12,6 +13,7 @@ interface PastMatch {
   date: string;
   topPerformers: string[];
   resultPoints: number;
+  rawScore?: number;
   mvpName?: string;
 }
 
@@ -38,6 +40,7 @@ export const MatchHistory: React.FC = () => {
                return player ? player.profileImage : 'https://i.pravatar.cc/150';
             });
             const topScore = topEntries.length > 0 ? topEntries[0].pointsAwarded : 0;
+            const topRaw = topEntries.length > 0 ? topEntries[0].score : undefined;
             const mvpPlayer = topEntries.length > 0 ? dbPlayers.find(p => p.id === topEntries[0].playerId) : null;
 
             const dateStr = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'}) : 'Recently';
@@ -49,6 +52,7 @@ export const MatchHistory: React.FC = () => {
                date: dateStr,
                topPerformers: avatars,
                resultPoints: topScore,
+               rawScore: topRaw,
                mvpName: mvpPlayer?.name
             };
          }));
@@ -62,7 +66,11 @@ export const MatchHistory: React.FC = () => {
     fetchData();
   }, []);
 
-  if (loading) return <div className="p-4" style={{ color: 'var(--text-secondary)' }}>Loading History...</div>;
+  if (loading) return (
+    <div className={styles.container} style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+       <div className="loader"></div>
+    </div>
+  );
 
   return (
     <div className={styles.container}>
@@ -123,18 +131,21 @@ export const MatchHistory: React.FC = () => {
                   {match.resultPoints > 0 ? `+${match.resultPoints}` : match.resultPoints} <span className={styles.ptsLabel}>PTS</span>
                 </span>
                 <span className={styles.resultStatus}>
-                  {match.resultPoints > 0 ? 'ELITE REWARD' : 'NO POINTS'}
+                  {match.rawScore !== undefined ? `${match.rawScore} RAW SCORE` : (match.resultPoints > 0 ? 'ELITE REWARD' : 'NO POINTS')}
                 </span>
              </div>
           </motion.div>
         ))}
 
         {matches.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>
-            <p>No matches played yet.</p>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', color: 'var(--text-secondary)' }}>
+            <Award size={48} opacity={0.2} style={{ marginBottom: '1rem' }} />
+            <p style={{ fontSize: '1rem', fontWeight: 500 }}>No matches played yet.</p>
           </div>
         )}
       </div>
+
+      {matches.length > 0 && <MatrixTable />}
     </div>
   );
 };

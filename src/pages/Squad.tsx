@@ -24,7 +24,11 @@ export const Squad: React.FC = () => {
     fetch();
   }, []);
 
-  if (loading) return <div className="p-4" style={{ color: 'var(--text-secondary)' }}>Loading Squad...</div>;
+  if (loading) return (
+    <div className={styles.container} style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div className="loader"></div>
+    </div>
+  );
 
   const topPlayer = players.length > 0 ? players[0] : null;
 

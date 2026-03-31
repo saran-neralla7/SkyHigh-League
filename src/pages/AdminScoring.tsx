@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './AdminScoring.module.css';
-import { Crown, Loader2, Mail, Lock } from 'lucide-react';
-import { getPlayers, saveMatchResults } from '../lib/db';
-import type { Player } from '../lib/db';
+import { Crown, Loader2, Mail, Lock, Trash2 } from 'lucide-react';
+import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer } from '../lib/db';
+import type { Player, Match } from '../lib/db';
+import { Modal } from '../components/Modal';
 
 export const AdminScoring: React.FC = () => {
   const { isAdmin, createPlayerAccount } = useAuth();
@@ -20,14 +21,20 @@ export const AdminScoring: React.FC = () => {
   const [newPlayerEmail, setNewPlayerEmail] = useState('');
   const [newPlayerPassword, setNewPlayerPassword] = useState('');
   const [isAddingData, setIsAddingData] = useState(false);
-  const [activeTab, setActiveTab] = useState<'scoring'|'players'>('scoring');
+  const [activeTab, setActiveTab] = useState<'scoring'|'players'|'manage'>('scoring');
+  
+  // Manage State
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [modalConfig, setModalConfig] = useState<{ isOpen: boolean, title: string, message: string, onConfirm?: () => void }>({ isOpen: false, title: '', message: '' });
 
   useEffect(() => {
     if (isAdmin) {
        const fetchPlayers = async () => {
          try {
            const dbPlayers = await getPlayers();
+           const dbMatches = await getMatches();
            setPlayers(dbPlayers);
+           setMatches(dbMatches);
          } catch(e) { console.error(e) }
          setLoading(false);
        };
@@ -43,17 +50,50 @@ export const AdminScoring: React.FC = () => {
     setScores(prev => ({ ...prev, [id]: val }));
   };
 
+  const confirmDeletePlayer = (p: Player) => {
+    setModalConfig({
+      isOpen: true,
+      title: "Delete Player?",
+      message: `Are you sure you want to permanently delete '${p.name}'? This cannot be undone.`,
+      onConfirm: async () => {
+        setLoading(true);
+        await deletePlayer(p.id);
+        const freshPlayers = await getPlayers();
+        setPlayers(freshPlayers);
+        setLoading(false);
+      }
+    });
+  };
+
+  const confirmDeleteMatch = (m: Match) => {
+    const title = (m as any).matchTitle || `Match ${m.matchNumber}`;
+    setModalConfig({
+      isOpen: true,
+      title: "Delete Match?",
+      message: `Are you sure you want to permanently delete '${title}'? This will recalculate all player points.`,
+      onConfirm: async () => {
+        setLoading(true);
+        await deleteMatch(m.id);
+        const freshPlayers = await getPlayers();
+        const freshMatches = await getMatches();
+        setPlayers(freshPlayers);
+        setMatches(freshMatches);
+        setLoading(false);
+      }
+    });
+  };
+
   const handleCreatePlayerAccount = async () => {
     if (!newPlayerName.trim() || !newPlayerEmail.trim() || !newPlayerPassword.trim()) {
-      return alert("Please fill in Name, Email, and Password.");
+      return setModalConfig({ isOpen: true, title: "Missing Fields", message: "Please fill in Name, Email, and Password." });
     }
     if (newPlayerPassword.length < 6) {
-      return alert("Password must be at least 6 characters.");
+      return setModalConfig({ isOpen: true, title: "Invalid Password", message: "Password must be at least 6 characters." });
     }
     setIsAddingData(true);
     try {
       await createPlayerAccount(newPlayerEmail, newPlayerPassword, newPlayerName, newPlayerTeam);
-      alert(`Account created for ${newPlayerName}!\nLogin: ${newPlayerEmail}`);
+      setModalConfig({ isOpen: true, title: "Success", message: `Account created for ${newPlayerName}!\nLogin: ${newPlayerEmail}` });
       setNewPlayerName('');
       setNewPlayerTeam('');
       setNewPlayerEmail('');
@@ -63,13 +103,13 @@ export const AdminScoring: React.FC = () => {
       setPlayers(freshPlayers);
     } catch(e: any) {
       console.error(e);
-      alert("Failed: " + (e.message || "Unknown error"));
+      setModalConfig({ isOpen: true, title: "Error", message: "Failed: " + (e.message || "Unknown error") });
     }
     setIsAddingData(false);
   };
 
   const handleSubmit = async () => {
-     if (players.length === 0) return alert("No players added.");
+     if (players.length === 0) return setModalConfig({ isOpen: true, title: "Oops!", message: "No players added." });
      
      setIsAddingData(true);
      const playerScores = players.map(p => {
@@ -108,20 +148,26 @@ export const AdminScoring: React.FC = () => {
 
      try {
        await saveMatchResults(Number(matchNumber), results, players, matchTitle);
-       alert("Match Saved successfully via Firestore!");
+       setModalConfig({ isOpen: true, title: "Match Saved", message: "Match results calculated and saved successfully!" });
        setScores({});
        setMatchNumber(String(Number(matchNumber) + 1));
        setMatchTitle('');
        const freshPlayers = await getPlayers();
+       const freshMatches = await getMatches();
        setPlayers(freshPlayers);
+       setMatches(freshMatches);
      } catch (err) {
        console.error(err);
-       alert("Upload failed. Ensure Firebase is connected and rules are set.");
+       setModalConfig({ isOpen: true, title: "Error", message: "Upload failed. Ensure Firebase is connected and rules are set." });
      }
      setIsAddingData(false);
   }
 
-  if (loading) return <div className="p-4">Loading UI...</div>;
+  if (loading) return (
+    <div className={styles.container} style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div className="loader"></div>
+    </div>
+  );
 
   return (
     <div className={styles.container}>
@@ -138,6 +184,16 @@ export const AdminScoring: React.FC = () => {
           <img src="https://i.pravatar.cc/150?u=admin" alt="Admin" className={styles.adminAvatar} />
         </div>
       </header>
+
+      {/* Modal */}
+      <Modal 
+        isOpen={modalConfig.isOpen} 
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onConfirm={modalConfig.onConfirm}
+        isDestructive={modalConfig.title.includes("Delete")}
+      />
 
       {/* Tab Switcher */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -160,6 +216,16 @@ export const AdminScoring: React.FC = () => {
             border: '1px solid var(--border-color)'
           }}>
           CREATE PLAYER
+        </button>
+        <button 
+          onClick={() => setActiveTab('manage')}
+          style={{ 
+            flex: 1, padding: '0.75rem', borderRadius: '10px', fontWeight: 'bold', fontSize: '0.8rem',
+            background: activeTab === 'manage' ? 'var(--accent-primary)' : 'var(--bg-card)', 
+            color: activeTab === 'manage' ? '#000' : 'var(--text-secondary)',
+            border: '1px solid var(--border-color)'
+          }}>
+          MANAGE
         </button>
       </div>
 
@@ -302,6 +368,49 @@ export const AdminScoring: React.FC = () => {
                {players.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No players yet. Create accounts above!</p>}
              </div>
           </div>
+        </section>
+      )}
+
+      {activeTab === 'manage' && (
+        <section className={styles.identityGroup}>
+           <div className={styles.identityCard} style={{ marginBottom: '1rem' }}>
+             <p className={styles.cardEyebrow}>MANAGE MATCHES ({matches.length})</p>
+             <div style={{ marginTop: '0.75rem' }}>
+               {matches.map(m => (
+                 <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                   <div>
+                     <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Match {m.matchNumber}</p>
+                     <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{(m as any).matchTitle || ''}</p>
+                   </div>
+                   <button onClick={() => confirmDeleteMatch(m)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
+                     <Trash2 size={16} />
+                   </button>
+                 </div>
+               ))}
+               {matches.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No matches found.</p>}
+             </div>
+           </div>
+
+           <div className={styles.identityCard}>
+             <p className={styles.cardEyebrow}>MANAGE PLAYERS ({players.length})</p>
+             <div style={{ marginTop: '0.75rem' }}>
+               {players.map(p => (
+                 <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                     <img src={p.profileImage} alt={p.name} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                     <div>
+                       <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</p>
+                       <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.metrics.totalPoints} PTS</p>
+                     </div>
+                   </div>
+                   <button onClick={() => confirmDeletePlayer(p)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
+                     <Trash2 size={16} />
+                   </button>
+                 </div>
+               ))}
+               {players.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No players found.</p>}
+             </div>
+           </div>
         </section>
       )}
     </div>
