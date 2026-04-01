@@ -9,7 +9,29 @@ import { MatchDetails } from './pages/MatchDetails';
 import { Stats } from './pages/Stats';
 import { Squad } from './pages/Squad';
 
+import { useEffect } from 'react';
+import { db } from './firebase';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+
 function App() {
+  useEffect(() => {
+    const runAvatarMigration = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "players"));
+        snapshot.forEach(async (pDoc) => {
+          const data = pDoc.data();
+          if (data.name?.includes("Saran Neralla") && data.profileImage !== "/avatars/saran.jpg") {
+             await updateDoc(doc(db, "players", pDoc.id), { profileImage: "/avatars/saran.jpg" });
+             console.log("Migrated Saran Avatar!");
+          }
+        });
+      } catch (e) {
+        console.error("Migration failed", e);
+      }
+    };
+    runAvatarMigration();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
