@@ -1,6 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { storage } from '../firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Camera, Loader2 } from 'lucide-react';
 import styles from './ImageUploader.module.css';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -17,9 +15,44 @@ interface Props {
 export const ImageUploader: React.FC<Props> = ({ playerId, currentImage, onUploadSuccess, size = 64 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMsg, setModalMsg] = useState('');
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIMENSION = 150; // Keep very tiny so it fits safely in Firestore Document limits!
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIMENSION) {
+            height *= MAX_DIMENSION / width;
+            width = MAX_DIMENSION;
+          }
+        } else {
+          if (height > MAX_DIMENSION) {
+            width *= MAX_DIMENSION / height;
+            height = MAX_DIMENSION;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject('No canvas context');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress heavily as JPEG to ensure it fits in Firestore
+        const base64String = canvas.toDataURL('image/jpeg', 0.6);
+        URL.revokeObjectURL(img.src);
+        resolve(base64String);
+      };
+      img.onerror = () => reject('Failed to load image');
+    });
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,34 +65,23 @@ export const ImageUploader: React.FC<Props> = ({ playerId, currentImage, onUploa
     }
 
     setUploading(true);
-    setProgress(0);
+    
+    try {
+       // Bypasses Firebase Storage entirely to avoid Paywalls/Credit Card requirements.
+       // We compress the image heavily into a ~5KB Base64 String and save it directly to Firestore.
+       const base64Image = await compressImage(file);
+       
+       const pRef = doc(db, 'players', playerId);
+       await updateDoc(pRef, { profileImage: base64Image });
 
-    const storageRef = ref(storage, `profiles/${playerId}_${Date.now()}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const p = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(p);
-      },
-      (error) => {
-        console.error("Upload failed", error);
-        setModalMsg("Upload failed. Ensure Firebase Storage rules are set to allow authenticated uploads.");
-        setModalOpen(true);
-        setUploading(false);
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        
-        // Update Firestore player document
-        const pRef = doc(db, 'players', playerId);
-        await updateDoc(pRef, { profileImage: downloadURL });
-
-        onUploadSuccess(downloadURL);
-        setUploading(false);
-      }
-    );
+       onUploadSuccess(base64Image);
+       setUploading(false);
+    } catch (error) {
+       console.error("Upload failed", error);
+       setModalMsg("Failed to process and upload image.");
+       setModalOpen(true);
+       setUploading(false);
+    }
   };
 
   return (
@@ -91,7 +113,6 @@ export const ImageUploader: React.FC<Props> = ({ playerId, currentImage, onUploa
       {uploading && (
         <div className={styles.uploadingState}>
            <Loader2 size={size / 3} className="animate-spin" color="#EAB308" />
-           <span className={styles.progressText}>{Math.round(progress)}%</span>
         </div>
       )}
 
