@@ -10,61 +10,11 @@ import type { Player } from '../lib/db';
 const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTAgMTUwIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzNmM2Y0NiIvPjxjaXJjbGUgY3g9Ijc1IiBjeT0iNTUiIHI9IjI1IiBmaWxsPSIjYTFhMWFhIi8+PHBhdGggZD0iTTI1IDEzMCBRNzUgODAgMTI1IDEzMCBaIiBmaWxsPSIjYTFhMWFhIi8+PC9zdmc+`;
 const CROWN_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0VBQjMwOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgMWwzIDExaDE0bDMtMTEtNiA4LTQtOC00IDh6Ii8+PHBhdGggZD0iTTQgMTRoMTZ2NEg0eiIvPjwvc3ZnPg==`;
 
-const SharePlayerCard = ({ rank, player, width, avatarSize, ringColor, bgColor }: any) => {
-  if (!player) return null;
-  const isChamp = rank === 1;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: `${width}px` }}>
-      {/* Avatar Section */}
-      <div style={{ position: 'relative', zIndex: 10, marginBottom: `-${avatarSize / 2}px`, display: 'flex', justifyContent: 'center' }}>
-        {isChamp && (
-          <img src={CROWN_ICON} style={{ position: 'absolute', top: '-55px', zIndex: 20, width: '80px', height: '80px' }} alt="Crown" />
-        )}
-        <img 
-          src={player.avatar?.includes('pravatar') || !player.avatar || player.avatar.includes('default-avatar') ? DEFAULT_AVATAR : player.avatar} 
-          style={{ width: `${avatarSize}px`, height: `${avatarSize}px`, borderRadius: '50%', border: `8px solid ${ringColor}`, objectFit: 'cover', background: '#3f3f46', position: 'relative', zIndex: 10 }} 
-          crossOrigin="anonymous" 
-          alt={player.name}
-        />
-      </div>
-
-      {/* Info Card */}
-      <div style={{ 
-        background: bgColor, 
-        padding: `${avatarSize / 2 + 30}px 20px 30px 20px`, 
-        borderRadius: '24px', 
-        width: '100%', 
-        borderTop: `10px solid ${ringColor}`,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        boxShadow: isChamp ? '0 0 50px rgba(234,179,8,0.2)' : 'none',
-        position: 'relative',
-        zIndex: 5
-      }}>
-        <p style={{ margin: 0, fontSize: isChamp ? '36px' : '28px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', maxWidth: '90%' }}>{player.name}</p>
-        <p style={{ margin: '15px 0 0 0', fontSize: isChamp ? '64px' : '48px', fontWeight: 900, color: isChamp ? '#EAB308' : '#fff', textShadow: isChamp ? '0 0 20px rgba(234,179,8,0.5)' : 'none' }}>{player.points}</p>
-        <span style={{ 
-          background: isChamp ? 'linear-gradient(90deg, #EAB308, #FDE047)' : ringColor, 
-          color: '#000', 
-          padding: '8px 24px', 
-          borderRadius: '20px', 
-          fontSize: '20px', 
-          fontWeight: 900, 
-          marginTop: '25px',
-          boxShadow: isChamp ? '0 4px 15px rgba(234,179,8,0.4)' : 'none'
-        }}>
-          {isChamp ? 'CHAMPION' : `RANK ${rank}`}
-        </span>
-      </div>
-    </div>
-  );
-};
-
 export const ElitePavillion: React.FC = () => {
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const shareCardRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -137,17 +87,21 @@ export const ElitePavillion: React.FC = () => {
   }
 
   const handleWhatsAppShare = async () => {
-    if (!shareCardRef.current) return;
+    if (!containerRef.current) return;
     
     try {
       setIsSharing(true);
       await new Promise(r => setTimeout(r, 100));
 
-      // Render hidden card to blob
-      const blob = await toBlob(shareCardRef.current, {
+      const blob = await toBlob(containerRef.current, {
         cacheBust: true,
         pixelRatio: 2, // High-quality rendering
-        style: { background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)' },
+        style: { background: 'var(--bg-dark)' },
+        filter: (node) => {
+          // Explicitly exclude the loading overlay from the screenshot
+          if (node.id === 'capture-overlay') return false;
+          return true;
+        }
       });
 
       if (!blob) throw new Error("Could not generate image");
@@ -190,44 +144,11 @@ export const ElitePavillion: React.FC = () => {
       
       {/* Visual Overlay to tell user sharing is in progress */}
       {isSharing && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div id="capture-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div className="loader" style={{ marginBottom: '20px' }}></div>
           <span style={{ color: '#EAB308', fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '1px' }}>Building High-Res Image...</span>
         </div>
       )}
-
-      {/* Hidden Landscape Share Card (Fixed in background to prevent Safari culling) */}
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -1000, pointerEvents: 'none' }}>
-        <div 
-          ref={shareCardRef}
-          style={{
-            width: '1200px',
-            height: '630px',
-          background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          padding: '50px 0',
-          fontFamily: '"Inter", sans-serif',
-          color: '#ffffff',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '80px' }}>
-          <div style={{ width: '60px', height: '60px', background: '#EAB308', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🏏</div>
-          <h1 style={{ fontSize: '64px', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, color: '#FFFFFF', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>SKYHIGH LEAGUE</h1>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '40px', width: '100%', height: '350px' }}>
-          <SharePlayerCard rank={podium[0]?.rank || 2} player={podium[0]} width={280} avatarSize={130} ringColor="#C0C0C0" bgColor="rgba(255,255,255,0.05)" />
-          <div style={{ transform: 'translateY(-20px)' }}>
-            <SharePlayerCard rank={podium[1]?.rank || 1} player={podium[1]} width={340} avatarSize={180} ringColor="#EAB308" bgColor="rgba(234,179,8,0.1)" />
-          </div>
-          <SharePlayerCard rank={podium[2]?.rank || 3} player={podium[2]} width={280} avatarSize={130} ringColor="#CD7F32" bgColor="rgba(255,255,255,0.05)" />
-        </div>
-      </div>
-      </div>
 
       <header className={styles.header}>
         <div className={styles.headerLeft}>
