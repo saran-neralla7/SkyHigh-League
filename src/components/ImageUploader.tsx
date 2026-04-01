@@ -20,37 +20,41 @@ export const ImageUploader: React.FC<Props> = ({ playerId, currentImage, onUploa
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_DIMENSION = 150; // Keep very tiny so it fits safely in Firestore Document limits!
-        let width = img.width;
-        let height = img.height;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIMENSION = 150; // Keep very tiny so it fits safely in Firestore Document limits!
+          let width = img.width;
+          let height = img.height;
 
-        if (width > height) {
-          if (width > MAX_DIMENSION) {
-            height *= MAX_DIMENSION / width;
-            width = MAX_DIMENSION;
+          if (width > height) {
+            if (width > MAX_DIMENSION) {
+              height *= MAX_DIMENSION / width;
+              width = MAX_DIMENSION;
+            }
+          } else {
+            if (height > MAX_DIMENSION) {
+              width *= MAX_DIMENSION / height;
+              height = MAX_DIMENSION;
+            }
           }
-        } else {
-          if (height > MAX_DIMENSION) {
-            width *= MAX_DIMENSION / height;
-            height = MAX_DIMENSION;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject('No canvas context');
-        ctx.drawImage(img, 0, 0, width, height);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('No canvas context');
+          ctx.drawImage(img, 0, 0, width, height);
 
-        // Compress heavily as JPEG to ensure it fits in Firestore
-        const base64String = canvas.toDataURL('image/jpeg', 0.6);
-        URL.revokeObjectURL(img.src);
-        resolve(base64String);
+          // Compress heavily as JPEG to ensure it fits in Firestore
+          const base64String = canvas.toDataURL('image/jpeg', 0.6);
+          resolve(base64String);
+        };
+        img.onerror = () => reject('Failed to load image');
+        img.src = e.target?.result as string;
       };
-      img.onerror = () => reject('Failed to load image');
+      reader.onerror = () => reject('Failed to read file');
+      reader.readAsDataURL(file);
     });
   };
 
