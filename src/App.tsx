@@ -20,9 +20,15 @@ function App() {
         const snapshot = await getDocs(collection(db, "players"));
         snapshot.forEach(async (pDoc) => {
           const data = pDoc.data();
-          if (data.name?.includes("Saran Neralla") && data.profileImage !== "/avatars/saran.jpg") {
+          const isSaran = data.name?.includes("Saran Neralla");
+          const isPravatar = data.profileImage?.includes('pravatar');
+
+          if (isSaran && data.profileImage !== "/avatars/saran.jpg") {
              await updateDoc(doc(db, "players", pDoc.id), { profileImage: "/avatars/saran.jpg" });
              console.log("Migrated Saran Avatar!");
+          } else if (isPravatar) {
+             await updateDoc(doc(db, "players", pDoc.id), { profileImage: "/default-avatar.svg" });
+             console.log("Purged random dummy Pravatar profile!");
           }
         });
       } catch (e) {

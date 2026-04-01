@@ -7,7 +7,6 @@ import { toBlob } from 'html-to-image';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
 
-const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTAgMTUwIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzNmM2Y0NiIvPjxjaXJjbGUgY3g9Ijc1IiBjeT0iNTUiIHI9IjI1IiBmaWxsPSIjYTFhMWFhIi8+PHBhdGggZD0iTTI1IDEzMCBRNzUgODAgMTI1IDEzMCBaIiBmaWxsPSIjYTFhMWFhIi8+PC9zdmc+`;
 const CROWN_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0VBQjMwOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgMWwzIDExaDE0bDMtMTEtNiA4LTQtOC00IDh6Ii8+PHBhdGggZD0iTTQgMTRoMTZ2NEg0eiIvPjwvc3ZnPg==`;
 
 export const ElitePavillion: React.FC = () => {
@@ -34,7 +33,7 @@ export const ElitePavillion: React.FC = () => {
                rank: currentRank,
                name: p.name,
                points: p.metrics.totalPoints.toLocaleString(),
-               avatar: p.profileImage?.includes('pravatar') || !p.profileImage || p.profileImage.includes('default-avatar') ? DEFAULT_AVATAR : p.profileImage,
+               avatar: p.profileImage || "/default-avatar.svg",
                movement: 0,
                form: p.metrics.form || []
             }
