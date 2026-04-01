@@ -6,6 +6,8 @@ import styles from './Layout.module.css';
 import { useAuth } from '../AuthContext';
 import { Login } from '../pages/Login';
 
+import { WelcomeModal } from './WelcomeModal';
+
 const pageVariants = {
   initial: { opacity: 0, y: 10, scale: 0.98 },
   in: { opacity: 1, y: 0, scale: 1 },
@@ -28,6 +30,7 @@ export const Layout: React.FC = () => {
 
   return (
     <div className={styles.appContainer}>
+      <WelcomeModal />
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}
