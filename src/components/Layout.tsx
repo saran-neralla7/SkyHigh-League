@@ -1,11 +1,10 @@
 import React from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 import { AnimatePresence, motion } from 'framer-motion';
 import styles from './Layout.module.css';
 import { useAuth } from '../AuthContext';
 import { Login } from '../pages/Login';
-import { LogOut } from 'lucide-react';
 
 const pageVariants = {
   initial: { opacity: 0, y: 10, scale: 0.98 },
@@ -20,9 +19,8 @@ const pageTransition: any = {
 };
 
 export const Layout: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   
   if (!currentUser) {
     return <Login />;
@@ -30,14 +28,6 @@ export const Layout: React.FC = () => {
 
   return (
     <div className={styles.appContainer}>
-      <button 
-        onClick={() => { logout(); navigate('/'); }}
-        className={styles.logoutBtn}
-        aria-label="Logout"
-      >
-        <LogOut size={18} />
-      </button>
-
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}

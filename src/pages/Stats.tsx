@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './Stats.module.css';
-import { TrendingUp, Trophy, Target, Award, Zap, Crown } from 'lucide-react';
+import { LogOut, TrendingUp, Trophy, Target, Award, Zap, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPlayers, getMatches, getPlayerEntries } from '../lib/db';
 import type { Player } from '../lib/db';
@@ -12,7 +12,8 @@ import { TeamBadge } from '../components/TeamBadge';
 
 export const Stats: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { currentUser, playerData, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { currentUser, playerData, isAdmin, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [player, setPlayer] = useState<Player | null>(null);
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
@@ -102,6 +103,15 @@ export const Stats: React.FC = () => {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1>Player Stats</h1>
+        {currentUser && (
+          <button 
+            onClick={() => { logout(); navigate('/'); }} 
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '8px' }}
+            aria-label="Logout"
+          >
+            <LogOut size={22} />
+          </button>
+        )}
       </header>
 
       {/* Profile Card */}
