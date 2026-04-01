@@ -78,7 +78,9 @@ export const ImageUploader: React.FC<Props> = ({ playerId, currentImage, onUploa
        setUploading(false);
     } catch (error) {
        console.error("Upload failed", error);
-       setModalMsg("Failed to process and upload image.");
+       // Safely extract error string
+       const errorMsg = error instanceof Error ? error.message : String(error);
+       setModalMsg(`Failed to process and upload image. Error: ${errorMsg}`);
        setModalOpen(true);
        setUploading(false);
     }
@@ -120,7 +122,10 @@ export const ImageUploader: React.FC<Props> = ({ playerId, currentImage, onUploa
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/*"
+        // CRITICAL: By restricting this exactly away from `image/*` to specific web formats,
+        // Apple iOS devices will be FORCED to natively transcode HEIC images into JPEGs 
+        // before passing the File object to Javascript, preventing Canvas loading crashes!
+        accept="image/jpeg, image/png, image/webp"
         style={{ display: 'none' }}
       />
     </div>
