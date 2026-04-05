@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
+import { useNavigate } from 'react-router-dom';
 import styles from './AdminScoring.module.css';
-import { Crown, Loader2, Mail, Lock, Trash2, Trophy } from 'lucide-react';
+import { Crown, Loader2, Lock, Trash2, Trophy, LogOut, Mail } from 'lucide-react';
 import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague, startNewSeason, getActiveSeasonId } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
 import { sounds } from '../lib/sounds';
 
 export const AdminScoring: React.FC = () => {
-  const { isAdmin, createPlayerAccount } = useAuth();
+  const { isAdmin, createPlayerAccount, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
   const [matchNumber, setMatchNumber] = useState('1');
@@ -277,7 +279,13 @@ export const AdminScoring: React.FC = () => {
           </div>
           <h1>ADMIN PANEL</h1>
         </div>
-        <div className={styles.headerRight}>
+        <div className={styles.headerRight} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button 
+            onClick={() => { logout(); navigate('/'); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '0.5rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.75rem' }}
+          >
+             <LogOut size={16} /> LOGOUT
+          </button>
           <img src="/default-avatar.svg" alt="Admin" className={styles.adminAvatar} />
         </div>
       </header>

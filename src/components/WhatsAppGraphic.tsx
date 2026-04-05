@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './WhatsAppGraphic.module.css';
 import { Trophy } from 'lucide-react';
 
-export const WhatsAppGraphic: React.FC<{ standings: any[] }> = ({ standings }) => {
+export const WhatsAppGraphic: React.FC<{ standings: any[], season: string }> = ({ standings, season }) => {
   const top3 = standings.slice(0, 3);
   const remaining = standings.slice(3);
 
@@ -17,7 +17,7 @@ export const WhatsAppGraphic: React.FC<{ standings: any[] }> = ({ standings }) =
           <Trophy size={48} color="#FFD700" />
           <div>
             <h1>SKYHIGH LEAGUE</h1>
-            <p>OFFICIAL MATCH LEADERBOARD</p>
+            <p>OFFICIAL MATCH LEADERBOARD • {season.toUpperCase()}</p>
           </div>
         </div>
       </header>

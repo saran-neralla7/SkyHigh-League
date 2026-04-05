@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styles from './ElitePavillion.module.css';
-import { Bell, Share2 } from 'lucide-react';
+import { Bell, Share2, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { toBlob } from 'html-to-image';
-import { getPlayers } from '../lib/db';
+import { getPlayers, getActiveSeasonId } from '../lib/db';
 import type { Player } from '../lib/db';
 import { WhatsAppGraphic } from '../components/WhatsAppGraphic';
 import { sounds } from '../lib/sounds';
@@ -15,12 +15,15 @@ export const ElitePavillion: React.FC = () => {
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
+  const [season, setSeason] = useState('season-1');
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
        try {
          const dbPlayers = await getPlayers();
+         const dbSeason = await getActiveSeasonId();
+         setSeason(dbSeason);
          
          let currentRank = 1;
          const finalStandings = dbPlayers.map((p: Player, index: number) => {
@@ -199,7 +202,10 @@ export const ElitePavillion: React.FC = () => {
             <div className={styles.bar}></div>
             <div className={styles.bar}></div>
           </div>
-          <h1>Elite Pavillion</h1>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <h1>Elite Pavillion</h1>
+            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '0.1em', color: 'var(--accent-primary)', marginTop: '0.1rem' }}>{season.toUpperCase()}</span>
+          </div>
         </div>
         <div className={styles.headerRight}>
           <Share2 size={24} className={styles.bellIcon} onClick={handleWhatsAppShare} style={{ marginRight: '1rem', cursor: 'pointer' }} />
@@ -314,7 +320,7 @@ export const ElitePavillion: React.FC = () => {
       )}
       
       {/* Off-Screen Target for Flawless Resolution WhatsApp Snapshots */}
-      <WhatsAppGraphic standings={standings} />
+      <WhatsAppGraphic standings={standings} season={season} />
     </div>
   );
 };
