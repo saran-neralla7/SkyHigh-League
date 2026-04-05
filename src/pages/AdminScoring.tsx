@@ -6,6 +6,7 @@ import { Crown, Loader2, Mail, Lock, Trash2 } from 'lucide-react';
 import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
+import { sounds } from '../lib/sounds';
 
 export const AdminScoring: React.FC = () => {
   const { isAdmin, createPlayerAccount } = useAuth();
@@ -151,6 +152,7 @@ export const AdminScoring: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+     sounds.playThud();
      if (players.length === 0) return setModalConfig({ isOpen: true, title: "Oops!", message: "No players added." });
      
      setIsAddingData(true);

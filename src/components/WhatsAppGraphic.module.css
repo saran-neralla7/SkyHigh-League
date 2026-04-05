@@ -1,0 +1,227 @@
+.canvasContainer {
+  position: absolute;
+  left: -9999px; /* Hide from user entirely */
+  top: 0;
+  width: 1080px; /* Force 1080p width for perfect Instagram/WhatsApp stories spacing */
+  min-height: 1920px;
+  background-color: #09090b;
+  color: #fff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 80px 60px;
+  box-sizing: border-box;
+  overflow: hidden;
+  z-index: -100;
+}
+
+.background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(234, 179, 8, 0.15) 0%, rgba(9, 9, 11, 1) 70%);
+  z-index: 0;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 120px;
+  text-align: center;
+}
+
+.titleWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.titleWrapper h1 {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin: 0;
+  color: #fff;
+}
+
+.titleWrapper p {
+  font-size: 24px;
+  font-weight: 500;
+  color: #eab308;
+  letter-spacing: 0.2em;
+  margin: 0;
+}
+
+.podiumSection {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 60px;
+  margin-bottom: 120px;
+  padding: 0 40px;
+}
+
+.podiumBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  transform: translateY(40px);
+}
+
+.winnerBlock {
+  transform: translateY(0);
+}
+
+.avatarWrapper {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  padding: 6px;
+  background: linear-gradient(135deg, #3f3f46, #18181b);
+}
+
+.winnerBlock .avatarWrapper {
+  width: 240px;
+  height: 240px;
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+}
+
+.avatarWrapper img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #27272a;
+}
+
+.crown {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 60px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+}
+
+.rankBadge {
+  position: absolute;
+  bottom: -15px;
+  right: -15px;
+  width: 50px;
+  height: 50px;
+  background: #27272a;
+  border: 4px solid #09090b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: #a1a1aa;
+}
+
+.goldBadge {
+  background: #eab308;
+  color: #09090b;
+}
+
+.playerName {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f4f4f5;
+  margin: 0;
+  text-align: center;
+}
+
+.winnerBlock .playerName {
+  font-size: 36px;
+  color: #eab308;
+}
+
+.pointsBadge {
+  font-size: 24px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.winnerBlock .pointsBadge {
+  font-size: 32px;
+  font-weight: 800;
+  color: #f4f4f5;
+}
+
+.listSection {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 80%;
+  margin: 0 auto;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(39, 39, 42, 0.4);
+  backdrop-filter: blur(10px);
+  padding: 24px 40px;
+  border-radius: 24px;
+  border: 1px solid rgba(63, 63, 70, 0.5);
+}
+
+.listLeft {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.listRank {
+  font-size: 28px;
+  font-weight: 700;
+  color: #a1a1aa;
+  width: 40px;
+}
+
+.listAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #3f3f46;
+}
+
+.listName {
+  font-size: 32px;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.listPoints {
+  font-size: 32px;
+  font-weight: 800;
+  color: #f4f4f5;
+}
+
+.footer {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 500;
+  color: #52525b;
+  letter-spacing: 0.1em;
+}

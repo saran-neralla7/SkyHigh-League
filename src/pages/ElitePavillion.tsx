@@ -6,6 +6,8 @@ import confetti from 'canvas-confetti';
 import { toBlob } from 'html-to-image';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
+import { WhatsAppGraphic } from '../components/WhatsAppGraphic';
+import { sounds } from '../lib/sounds';
 
 const CROWN_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0VBQjMwOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgMWwzIDExaDE0bDMtMTEtNiA4LTQtOC00IDh6Ii8+PHBhdGggZD0iTTQgMTRoMTZ2NEg0eiIvPjwvc3ZnPg==`;
 
@@ -41,15 +43,41 @@ export const ElitePavillion: React.FC = () => {
          
          setStandings(finalStandings);
 
-         if (finalStandings.length > 0 && finalStandings[0].points !== '0') {
+         if (dbPlayers.length > 0) {
+           const topPoints = dbPlayers[0].metrics.totalPoints;
            setTimeout(() => {
-             confetti({
-               particleCount: 60,
-               spread: 50,
-               origin: { y: 0.5 },
-               colors: ['#FFD700', '#FDE047', '#FFFFFF'],
-               disableForReducedMotion: true,
-             });
+             if (topPoints >= 300) {
+               // Diamond / Elite Explosion
+               sounds.playSuccess();
+               confetti({
+                 particleCount: 150,
+                 spread: 80,
+                 origin: { y: 0.5 },
+                 colors: ['#FFD700', '#FFFFFF', '#67E8F9', '#FDE047'], // Gold + Diamonds
+                 disableForReducedMotion: true,
+               });
+             } else if (topPoints === 0) {
+               // Sad Gray Rain
+               confetti({
+                 particleCount: 30,
+                 spread: 100,
+                 origin: { y: 0 },
+                 colors: ['#52525b', '#71717a', '#3f3f46'],
+                 shapes: ['square'],
+                 ticks: 300,
+                 gravity: 0.5,
+                 disableForReducedMotion: true,
+               });
+             } else {
+               // Normal Celebration
+               confetti({
+                 particleCount: 60,
+                 spread: 50,
+                 origin: { y: 0.5 },
+                 colors: ['#FFD700', '#FDE047', '#FFFFFF'],
+                 disableForReducedMotion: true,
+               });
+             }
            }, 800);
          }
        } catch (error) {
@@ -86,18 +114,21 @@ export const ElitePavillion: React.FC = () => {
   }
 
   const handleWhatsAppShare = async () => {
-    if (!containerRef.current) return;
+    const captureNode = document.getElementById("whatsapp-capture-node");
+    if (!captureNode) {
+       console.error("Screenshot Canvas Missing");
+       return;
+    }
     
     try {
       setIsSharing(true);
       await new Promise(r => setTimeout(r, 100));
 
-      const blob = await toBlob(containerRef.current, {
+      const blob = await toBlob(captureNode, {
         cacheBust: true,
-        pixelRatio: 2, // High-quality rendering
-        style: { background: 'var(--bg-dark)' },
+        pixelRatio: 2, // High-quality 2x rendering of the 1080px node!
+        style: { background: '#09090b' },
         filter: (node) => {
-          // Explicitly exclude the loading overlay from the screenshot
           if (node.id === 'capture-overlay') return false;
           return true;
         }
@@ -269,6 +300,9 @@ export const ElitePavillion: React.FC = () => {
           </section>
         </>
       )}
+      
+      {/* Off-Screen Target for Flawless Resolution WhatsApp Snapshots */}
+      <WhatsAppGraphic standings={standings} />
     </div>
   );
 };

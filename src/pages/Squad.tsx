@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
 import { TeamBadge } from '../components/TeamBadge';
+import { sounds } from '../lib/sounds';
 
 export const Squad: React.FC = () => {
   const navigate = useNavigate();
@@ -74,7 +75,10 @@ export const Squad: React.FC = () => {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.04 }}
-              onClick={() => navigate(`/profile/${player.id}`)}
+              onClick={() => {
+                sounds.playSwoosh();
+                navigate(`/profile/${player.id}`);
+              }}
             >
               <div className={styles.playerLeft}>
                 <span className={`${styles.playerRank} ${rank <= 3 ? styles.rankGold : ''}`}>
