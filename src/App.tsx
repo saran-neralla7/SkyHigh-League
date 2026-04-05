@@ -25,7 +25,9 @@ function App() {
           "Deepak": "/avatars/deepak.jpg",
           "Prabhas": "/avatars/prabhas.jpg",
           "Sailesh": "/avatars/sailesh.jpg",
-          "Sashank": "/avatars/sashank.jpg"
+          "Sashank": "/avatars/sashank.jpg",
+          "Suraj": "/avatars/suraj.jpg",
+          "Pavan": "/avatars/pavan.jpg"
         };
 
         snapshot.forEach(async (pDoc) => {
