@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './AdminScoring.module.css';
-import { Crown, Loader2, Mail, Lock, Trash2 } from 'lucide-react';
-import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague } from '../lib/db';
+import { Crown, Loader2, Mail, Lock, Trash2, Trophy } from 'lucide-react';
+import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague, startNewSeason, getActiveSeasonId } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
 import { sounds } from '../lib/sounds';
@@ -32,22 +32,54 @@ export const AdminScoring: React.FC = () => {
   
   // Manage State
   const [matches, setMatches] = useState<Match[]>([]);
+  const [currentSeason, setCurrentSeason] = useState('season-1');
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean, title: string, message: string, onConfirm?: () => void }>({ isOpen: false, title: '', message: '' });
 
   useEffect(() => {
     if (isAdmin) {
-       const fetchPlayers = async () => {
+       const loadInitialData = async () => {
          try {
            const dbPlayers = await getPlayers();
            const dbMatches = await getMatches();
+           const activeSsn = await getActiveSeasonId();
            setPlayers(dbPlayers);
            setMatches(dbMatches);
+           setCurrentSeason(activeSsn);
+           if (dbMatches.length > 0) {
+              const maxNumber = Math.max(...dbMatches.map(m => m.matchNumber));
+              setMatchNumber(String(maxNumber + 1));
+           }
          } catch(e) { console.error(e) }
          setLoading(false);
        };
-       fetchPlayers();
+       loadInitialData();
     }
   }, [isAdmin]);
+
+  const handleEndSeason = async () => {
+    if (matches.length === 0) {
+      return setModalConfig({ isOpen: true, title: "No Matches", message: "Cannot end a season with zero matches played." });
+    }
+    
+    setLoading(true);
+    try {
+      const currentNumber = parseInt(currentSeason.replace(/\\D/g, '')) || 1;
+      const nextSeasonId = `season-${currentNumber + 1}`;
+      
+      await startNewSeason(nextSeasonId);
+      
+      setCurrentSeason(nextSeasonId);
+      const freshPlayers = await getPlayers();
+      const freshMatches = await getMatches();
+      setPlayers(freshPlayers);
+      setMatches(freshMatches); // Should wipe current active matches
+      setModalConfig({ isOpen: true, title: "Season Ended!", message: `The current season was permanently archived into the Hall of Fame. Starting fresh for ${nextSeasonId.toUpperCase()}!` });
+    } catch(err) {
+       console.error("End season failed", err);
+       setModalConfig({ isOpen: true, title: "Error", message: "Failed to archive season." });
+    }
+    setLoading(false);
+  };
 
   if (!isAdmin) {
     return <Login />;
@@ -513,8 +545,32 @@ export const AdminScoring: React.FC = () => {
              </div>
            </div>
            
+           {/* Season Management */}
+           <div style={{ marginTop: '3rem', padding: '1rem', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '12px', background: 'rgba(234, 179, 8, 0.05)' }}>
+             <p className={styles.cardEyebrow} style={{ color: '#eab308' }}>SEASON MANAGEMENT</p>
+             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+               This will permanently snapshot the current leaderboard into the Hall of Fame archive and wipe the live matrix cleanly to start a brand new season instantly.
+             </p>
+             <button 
+               onClick={() => setModalConfig({
+                  isOpen: true,
+                  title: "End Season",
+                  message: `Are you sure you want to end the current season? The leaderboard will be archived forever and everyone's active points will be set back to 0.`,
+                  onConfirm: handleEndSeason
+               })}
+               style={{ 
+                 width: '100%', padding: '0.75rem', borderRadius: '8px', 
+                 background: '#eab308', color: '#000', border: 'none', 
+                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+               }}
+             >
+               <Trophy size={16} /> END CURRENT SEASON
+             </button>
+           </div>
+           
            {/* Danger Zone */}
-           <div style={{ marginTop: '3rem', padding: '1rem', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)' }}>
+           <div style={{ marginTop: '1.5rem', padding: '1rem', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)' }}>
              <p className={styles.cardEyebrow} style={{ color: '#ef4444' }}>DANGER ZONE</p>
              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                This will permanently delete ALL matches and entirely reset all player 

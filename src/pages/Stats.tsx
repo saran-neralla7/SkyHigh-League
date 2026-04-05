@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { Login } from './Login';
 import styles from './Stats.module.css';
-import { LogOut, TrendingUp, Trophy, Target, Award, Zap, Crown } from 'lucide-react';
+import { LogOut, TrendingUp, Trophy, Target, Award, Zap, Crown, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { getPlayers, getMatches, getPlayerEntries } from '../lib/db';
 import type { Player } from '../lib/db';
 import { ImageUploader } from '../components/ImageUploader';
@@ -97,7 +98,6 @@ export const Stats: React.FC = () => {
     cumulative += m.pointsAwarded;
     return { match: m.matchNumber, total: cumulative, pts: m.pointsAwarded };
   });
-  const maxPts = Math.max(...chartData.map(d => d.total), 1);
 
   return (
     <div className={styles.container}>
@@ -220,26 +220,26 @@ export const Stats: React.FC = () => {
       {/* Growth Chart */}
       {chartData.length > 0 && (
         <section className={styles.chartSection}>
-          <h3><TrendingUp size={16} /> Points Growth</h3>
-          <div className={styles.chartContainer}>
-            <div className={styles.chartBars}>
-              {chartData.map((d, i) => (
-                <motion.div 
-                  key={i} 
-                  className={styles.chartBar}
-                  initial={{ height: 0 }} 
-                  animate={{ height: `${(d.total / maxPts) * 100}%` }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                >
-                  <span className={styles.barLabel}>+{d.pts}</span>
-                </motion.div>
-              ))}
-            </div>
-            <div className={styles.chartLabels}>
-              {chartData.map((d, i) => (
-                <span key={i}>M{d.match}</span>
-              ))}
-            </div>
+          <h3><TrendingUp size={16} /> Points Timeline</h3>
+          <div className={styles.chartContainer} style={{ height: '200px', marginTop: '1rem' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <XAxis dataKey="match" stroke="rgba(255,255,255,0.3)" fontSize={12} tickFormatter={(val) => `M${val}`} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }} 
+                  itemStyle={{ color: '#FFD700', fontWeight: 'bold' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="total" 
+                  name="Cumulative Pts" 
+                  stroke="#FFD700" 
+                  strokeWidth={3} 
+                  dot={{ r: 4, fill: '#FFD700', strokeWidth: 0 }} 
+                  activeDot={{ r: 6, fill: '#fff' }} 
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </section>
       )}
@@ -266,6 +266,30 @@ export const Stats: React.FC = () => {
               </span>
               <span className={styles.historyPts}>+{m.pointsAwarded}</span>
             </div>
+          </motion.div>
+        ))}
+      </section>
+
+      {/* AI Therapy Room */}
+      <section className={styles.historySection} style={{ marginTop: '2rem', border: '1px solid rgba(192, 132, 252, 0.3)', background: 'linear-gradient(145deg, rgba(192, 132, 252, 0.05) 0%, transparent 100%)' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#c084fc' }}><Sparkles size={16} /> AI Therapy Room</h3>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Your historical analytical roast log.</p>
+        
+        {matchHistory.length === 0 && <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No trauma recorded yet.</p>}
+        {matchHistory.map((m, i) => (
+          <motion.div 
+            key={i} 
+            className={styles.historyRow}
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem', borderLeft: '2px solid #c084fc', paddingLeft: '1rem', background: 'transparent' }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>M{m.matchNumber}: {m.matchTitle}</span>
+              <span style={{ fontSize: '0.75rem', color: m.rank <= 3 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>Rank #{m.rank}</span>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#e4e4e7', fontStyle: 'italic', lineHeight: 1.4, margin: 0 }}>
+              "{m.rank === 1 ? 'An accidental stroke of genius. Enjoy the delusion while it lasts.' : m.rank <= 3 ? 'Podium finish! The absolute bare minimum of competence.' : m.rank >= 8 ? 'An objectively embarrassing performance. Consider retiring from the sport.' : 'The definition of average. You blend right into the wallpaper.'}"
+            </p>
           </motion.div>
         ))}
       </section>

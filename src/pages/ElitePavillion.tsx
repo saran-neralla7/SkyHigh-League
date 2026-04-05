@@ -122,7 +122,15 @@ export const ElitePavillion: React.FC = () => {
     
     try {
       setIsSharing(true);
+      // Wait a moment for the overlay to render
       await new Promise(r => setTimeout(r, 100));
+
+      // Forcefully bring the node into the viewport underneath the loading overlay
+      captureNode.style.left = '0px';
+      captureNode.style.zIndex = '9998';
+
+      // We need to wait a frame for the CSS reflow to occur before capturing
+      await new Promise(r => setTimeout(r, 50));
 
       const blob = await toBlob(captureNode, {
         cacheBust: true,
@@ -133,6 +141,10 @@ export const ElitePavillion: React.FC = () => {
           return true;
         }
       });
+
+      // Shove it back off-screen
+      captureNode.style.left = '-9999px';
+      captureNode.style.zIndex = '-100';
 
       if (!blob) throw new Error("Could not generate image");
 

@@ -101,12 +101,14 @@ export const getPlayerEntries = async (playerId: string): Promise<Entry[]> => {
 
 export const saveMatchResults = async (matchNumber: number, results: any[], matchTitle?: string) => {
   const batch = writeBatch(db);
+  const activeSeasonId = await getActiveSeasonId();
   
   // Create Match Document
   const newMatchRef = doc(matchesRef);
   batch.set(newMatchRef, {
     id: newMatchRef.id,
     matchNumber,
+    seasonId: activeSeasonId,
     matchTitle: matchTitle || `Match ${matchNumber}`,
     createdAt: Timestamp.now(),
     locked: true
@@ -140,23 +142,58 @@ export const deletePlayer = async (playerId: string) => {
   await deleteDoc(pRef);
 };
 
+export const getActiveSeasonId = async (): Promise<string> => {
+  const docRef = doc(collection(db, 'system'), 'settings');
+  const snap = await getDoc(docRef);
+  if (!snap.exists() || !snap.data().activeSeasonId) {
+    await setDoc(docRef, { activeSeasonId: 'season-1' }, { merge: true });
+    return 'season-1';
+  }
+  return snap.data().activeSeasonId;
+};
+
+export const startNewSeason = async (newSeasonId: string) => {
+  // 1. Snapshot current leaderboard for the Hall of Fame
+  const currentSeasonId = await getActiveSeasonId();
+  const currentPlayers = await getPlayers(); // Automatically sorted by points correctly
+  
+  const seasonSnapshotRef = doc(collection(db, 'seasons'), currentSeasonId);
+  await setDoc(seasonSnapshotRef, {
+    id: currentSeasonId,
+    archivedAt: Timestamp.now(),
+    standings: currentPlayers.map((p, index) => ({
+       rank: index + 1,
+       name: p.name,
+       avatar: p.profileImage,
+       points: p.metrics.totalPoints,
+       wins: p.metrics.wins
+    }))
+  });
+
+  // 2. Roll over active season
+  const settingsRef = doc(collection(db, 'system'), 'settings');
+  await setDoc(settingsRef, { activeSeasonId: newSeasonId }, { merge: true });
+
+  // 3. Recalculate metrics (this drops everyone to 0 since there are no matches)
+  await recalculateAllPlayerMetrics();
+};
+
 export const deleteMatch = async (matchId: string) => {
   const batch = writeBatch(db);
   const matchEntries = await getMatchEntries(matchId);
   
-  // Delete entries without touching players manually
   for (const entry of matchEntries) {
     batch.delete(doc(entriesRef, entry.id));
   }
   
-  batch.delete(doc(matchesRef, matchId)); // Delete match
+  batch.delete(doc(matchesRef, matchId));
   await batch.commit();
-  
-  // Recalculate precisely after everything is deleted
   await recalculateAllPlayerMetrics();
 };
 
 export const recalculateAllPlayerMetrics = async () => {
+   const activeSeasonId = await getActiveSeasonId();
+
    const pSnapshot = await getDocs(playersRef);
    const players = pSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
    
@@ -166,15 +203,22 @@ export const recalculateAllPlayerMetrics = async () => {
    const mSnapshot = await getDocs(matchesRef);
    const allMatches = mSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
    
+   // Filter exactly down to the current season matches
+   const activeMatches = allMatches.filter(m => (m as any).seasonId === activeSeasonId || (!m.hasOwnProperty('seasonId') && activeSeasonId === 'season-1'));
+   const activeMatchIds = activeMatches.map(m => m.id);
+   
+   // Filter entries
+   const activeEntries = allEntries.filter(e => activeMatchIds.includes(e.matchId));
+
    const batch = writeBatch(db);
 
    for (const p of players) {
-      const pEntries = allEntries.filter(e => e.playerId === p.id);
+      const pEntries = activeEntries.filter(e => e.playerId === p.id);
       
       // Sort entries by Match Date to get correct Form
       pEntries.sort((a, b) => {
-         const ma = allMatches.find(m => m.id === a.matchId);
-         const mb = allMatches.find(m => m.id === b.matchId);
+         const ma = activeMatches.find(m => m.id === a.matchId);
+         const mb = activeMatches.find(m => m.id === b.matchId);
          const numA = ma ? ma.matchNumber : 0;
          const numB = mb ? mb.matchNumber : 0;
          return numB - numA; // Descending
@@ -210,13 +254,10 @@ export const updatePlayerProfile = async (playerId: string, name: string, team: 
 
 export const hardResetLeague = async () => {
   const batch = writeBatch(db);
-  
   const mSnap = await getDocs(matchesRef);
   mSnap.forEach(d => batch.delete(d.ref));
-  
   const eSnap = await getDocs(entriesRef);
   eSnap.forEach(d => batch.delete(d.ref));
-  
   const pSnap = await getDocs(playersRef);
   pSnap.forEach(d => {
     batch.update(d.ref, {
@@ -227,7 +268,6 @@ export const hardResetLeague = async () => {
       'metrics.form': []
     });
   });
-  
   await batch.commit();
 };
 

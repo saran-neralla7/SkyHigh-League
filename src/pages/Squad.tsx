@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import styles from './Squad.module.css';
-import { Users, Trophy, TrendingUp, Crown } from 'lucide-react';
+import { Users, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPlayers } from '../lib/db';
 import type { Player } from '../lib/db';
+import { TradingCard } from '../components/TradingCard';
 import { TeamBadge } from '../components/TeamBadge';
-import { sounds } from '../lib/sounds';
 
 export const Squad: React.FC = () => {
-  const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,47 +67,7 @@ export const Squad: React.FC = () => {
         {players.map((player, index) => {
           const rank = index + 1;
           return (
-            <motion.div
-              key={player.id}
-              className={styles.playerRow}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.04 }}
-              onClick={() => {
-                sounds.playSwoosh();
-                navigate(`/profile/${player.id}`);
-              }}
-            >
-              <div className={styles.playerLeft}>
-                <span className={`${styles.playerRank} ${rank <= 3 ? styles.rankGold : ''}`}>
-                  {rank}
-                </span>
-                <img src={player.profileImage} alt={player.name} className={styles.playerAvatar} />
-                <div className={styles.playerDetails}>
-                  <h3>{player.name}</h3>
-                  <div style={{ marginTop: '0.25rem' }}><TeamBadge team={player.team} /></div>
-                </div>
-              </div>
-              <div className={styles.playerRight}>
-                <div className={styles.playerStats}>
-                  <div className={styles.miniStat}>
-                    <Trophy size={12} color="#FFD700" />
-                    <span>{player.metrics.wins}</span>
-                  </div>
-                  <div className={styles.miniStat}>
-                    <TrendingUp size={12} color="#22c55e" />
-                    <span>{player.metrics.top3}</span>
-                  </div>
-                </div>
-                <span className={styles.playerPts}>{player.metrics.totalPoints} PTS</span>
-                {/* Form Dots */}
-                <div className={styles.formRow}>
-                  {(player.metrics.form || []).map((f, i) => (
-                    <span key={i} className={`${styles.dotSmall} ${f === 'W' ? styles.dotWin : f === 'L' ? styles.dotLoss : styles.dotDraw}`}></span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+            <TradingCard key={player.id} player={player} rank={rank} index={index} />
           );
         })}
       </div>
