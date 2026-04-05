@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './ElitePavillion.module.css';
-import { Bell, Share2, Crown } from 'lucide-react';
+import { Bell, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { toBlob } from 'html-to-image';
