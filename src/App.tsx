@@ -18,14 +18,32 @@ function App() {
     const runAvatarMigration = async () => {
       try {
         const snapshot = await getDocs(collection(db, "players"));
+        
+        const avatarMap: Record<string, string> = {
+          "Saran": "/avatars/saran.jpg",
+          "Sunny": "/avatars/sunny.jpg",
+          "Deepak": "/avatars/deepak.jpg",
+          "Prabhas": "/avatars/prabhas.jpg",
+          "Sailesh": "/avatars/sailesh.jpg",
+          "Sashank": "/avatars/sashank.jpg"
+        };
+
         snapshot.forEach(async (pDoc) => {
           const data = pDoc.data();
-          const isSaran = data.name?.includes("Saran Neralla");
+          const name = data.name || "";
           const isPravatar = data.profileImage?.includes('pravatar');
+          
+          let updatedUrl = null;
+          
+          Object.keys(avatarMap).forEach(key => {
+             if (name.includes(key) && data.profileImage !== avatarMap[key]) {
+                 updatedUrl = avatarMap[key];
+             }
+          });
 
-          if (isSaran && data.profileImage !== "/avatars/saran.jpg") {
-             await updateDoc(doc(db, "players", pDoc.id), { profileImage: "/avatars/saran.jpg" });
-             console.log("Migrated Saran Avatar!");
+          if (updatedUrl) {
+             await updateDoc(doc(db, "players", pDoc.id), { profileImage: updatedUrl });
+             console.log(`Migrated ${name} Avatar!`);
           } else if (isPravatar) {
              await updateDoc(doc(db, "players", pDoc.id), { profileImage: "/default-avatar.svg" });
              console.log("Purged random dummy Pravatar profile!");
