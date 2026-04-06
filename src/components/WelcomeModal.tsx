@@ -6,7 +6,7 @@ import styles from './WelcomeModal.module.css';
 import { Sparkles, Trophy, X, Activity, Target } from 'lucide-react';
 
 export const WelcomeModal: React.FC = () => {
-  const { currentUser, playerData } = useAuth();
+  const { currentUser, playerData, isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ rank: 0, points: 0, form: [] as string[] });
@@ -44,7 +44,11 @@ export const WelcomeModal: React.FC = () => {
             setAiText("You don't even have a player profile yet. Typical.");
           }
         } else {
-          setAiText("Welcome back Admin. Who are you going to ban today?");
+          if (isAdmin || currentUser?.email?.toLowerCase().includes('admin')) {
+             setAiText("Welcome back Admin. Who are you going to ban today?");
+          } else {
+             setAiText("You don't have a linked player profile yet! Ask the Admin to map your email to your squad name.");
+          }
         }
         
         setIsOpen(true);

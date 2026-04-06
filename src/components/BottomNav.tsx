@@ -24,7 +24,7 @@ export const BottomNav: React.FC = () => {
           </NavLink>
         </li>
         <li>
-          <NavLink to="/history" onClick={() => sounds.playHover()} className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+          <NavLink to="/matches" onClick={() => sounds.playHover()} className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
              <Clock className={styles.icon} />
              <span className={styles.label}>HISTORY</span>
           </NavLink>
