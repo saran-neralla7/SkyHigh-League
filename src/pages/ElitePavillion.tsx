@@ -40,6 +40,7 @@ export const ElitePavillion: React.FC = () => {
                rank: currentRank,
                name: p.name,
                points: p.metrics.totalPoints.toLocaleString(),
+               rawScore: (p.metrics.totalRawScore || 0).toLocaleString(),
                avatar: p.profileImage || "/default-avatar.svg",
                movement: 0,
                form: p.metrics.form || []
@@ -307,7 +308,7 @@ export const ElitePavillion: React.FC = () => {
                       <div className={styles.nameBlock}>
                         <p className={styles.rowName}>{player.name}</p>
                         <div className={styles.movement}>
-                          <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold', marginRight: '6px' }}>{player.points} PTS</span>
+                          <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold', marginRight: '6px' }}>{player.rawScore} RAW PTS</span>
                           {player.movement > 0 && <span className={styles.moveUp}>↑ {player.movement}</span>}
                           {player.movement < 0 && <span className={styles.moveDown}>↓ {Math.abs(player.movement)}</span>}
                           {player.movement === 0 && <span className={styles.moveSteady}>— 0</span>}

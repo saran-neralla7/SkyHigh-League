@@ -6,7 +6,7 @@ import styles from './WelcomeModal.module.css';
 import { Sparkles, Trophy, X, Activity, Target } from 'lucide-react';
 
 export const WelcomeModal: React.FC = () => {
-  const { currentUser, playerData, isAdmin } = useAuth();
+  const { currentUser, playerData, isAdmin, loading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ rank: 0, points: 0, form: [] as string[] });
@@ -14,10 +14,9 @@ export const WelcomeModal: React.FC = () => {
   const [greeting, setGreeting] = useState('Welcome');
 
   useEffect(() => {
-    // Only show once per session!
     const hasSeen = sessionStorage.getItem('welcome_seen');
-    if (hasSeen || !currentUser) {
-      setLoading(false);
+    if (hasSeen || authLoading || !currentUser) {
+      if (!authLoading) setLoading(false);
       return;
     }
 
@@ -35,7 +34,7 @@ export const WelcomeModal: React.FC = () => {
 
           if (pData) {
             const currentRank = pIndex + 1;
-            const pts = pData.metrics.totalPoints;
+            const pts = pData.metrics.totalRawScore || 0;
             const form = pData.metrics.form || [];
             
             setStats({ rank: currentRank, points: pts, form });

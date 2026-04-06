@@ -13,6 +13,7 @@ export interface Player {
     top3: number;
     average: number;
     totalPoints: number;
+    totalRawScore?: number;
     form?: ('W'|'L'|'D')[];
   };
 }
@@ -225,6 +226,7 @@ export const recalculateAllPlayerMetrics = async () => {
       });
 
       const totalPoints = pEntries.reduce((sum, e) => sum + e.pointsAwarded, 0);
+      const totalRawScore = pEntries.reduce((sum, e) => sum + e.score, 0);
       const wins = pEntries.filter(e => e.rank === 1).length;
       const top3 = pEntries.filter(e => e.rank <= 3).length;
       const avg = pEntries.length > 0 ? Math.round(totalPoints / pEntries.length) : 0;
@@ -237,6 +239,7 @@ export const recalculateAllPlayerMetrics = async () => {
 
       batch.update(doc(playersRef, p.id), {
          'metrics.totalPoints': totalPoints,
+         'metrics.totalRawScore': totalRawScore,
          'metrics.wins': wins,
          'metrics.top3': top3,
          'metrics.average': avg,

@@ -9,6 +9,8 @@ import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, up
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
 import { sounds } from '../lib/sounds';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export const AdminScoring: React.FC = () => {
   const { isAdmin, createPlayerAccount, logout } = useAuth();
@@ -26,6 +28,8 @@ export const AdminScoring: React.FC = () => {
   const [newPlayerPassword, setNewPlayerPassword] = useState('');
   const [isAddingData, setIsAddingData] = useState(false);
   const [activeTab, setActiveTab] = useState<'scoring'|'players'|'manage'>('scoring');
+  const [mapEmailText, setMapEmailText] = useState('');
+  const [mapPlayerId, setMapPlayerId] = useState('');
   
   // Edit State
   const [editingPlayerId, setEditingPlayerId] = useState<string|null>(null);
@@ -182,6 +186,25 @@ export const AdminScoring: React.FC = () => {
     } catch(e: any) {
       console.error(e);
       setModalConfig({ isOpen: true, title: "Error", message: "Failed: " + (e.message || "Unknown error") });
+    }
+    setIsAddingData(false);
+  };
+
+  const handleMapEmail = async () => {
+    if (!mapPlayerId || !mapEmailText.trim()) return;
+    setIsAddingData(true);
+    try {
+      const newAuthRef = doc(collection(db, 'playerAuth'));
+      await setDoc(newAuthRef, {
+         playerId: mapPlayerId,
+         email: mapEmailText.trim()
+      });
+      setModalConfig({ isOpen: true, title: "Linked Successfully", message: `The email ${mapEmailText} has been manually linked to the player. Have them sign out and sign back in to see their dashboard!` });
+      setMapEmailText('');
+      setMapPlayerId('');
+    } catch (e: any) {
+      console.error(e);
+      setModalConfig({ isOpen: true, title: "Link Failed", message: e.message || "Unknown error occurred" });
     }
     setIsAddingData(false);
   };
@@ -477,15 +500,61 @@ export const AdminScoring: React.FC = () => {
              <p className={styles.cardEyebrow}>REGISTERED PLAYERS ({players.length})</p>
              <div style={{ marginTop: '0.75rem' }}>
                {players.map(p => (
-                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                   <img src={p.profileImage} alt={p.name} style={{ width: 36, height: 36, borderRadius: '50%' }} />
-                   <div>
-                     <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</p>
-                     <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.team} • {p.metrics.totalPoints} PTS</p>
+                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                     <img src={p.profileImage} alt={p.name} style={{ width: 36, height: 36, borderRadius: '50%' }} />
+                     <div>
+                       <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</p>
+                       <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.team} • {p.metrics.totalPoints} PTS</p>
+                     </div>
                    </div>
+                   <button 
+                     onClick={() => setMapPlayerId(p.id)}
+                     style={{
+                       background: mapPlayerId === p.id ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                       color: mapPlayerId === p.id ? '#000' : '#fff',
+                       border: 'none',
+                       padding: '0.4rem 0.6rem',
+                       borderRadius: '6px',
+                       fontSize: '0.7rem',
+                       fontWeight: 'bold',
+                       cursor: 'pointer'
+                     }}>
+                     {mapPlayerId === p.id ? 'SELECTED' : 'SELECT'}
+                   </button>
                  </div>
                ))}
                {players.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No players yet. Create accounts above!</p>}
+             </div>
+             
+             <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.5rem' }}>LINK EXISTING LOGIN 🔗</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Select a player above, enter their Firebase email below, and click Link. This fixes "No linked player profile" errors.</p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                     type="email" 
+                     placeholder="player@gmail.com" 
+                     value={mapEmailText}
+                     onChange={(e) => setMapEmailText(e.target.value)}
+                     className={styles.matchNumberInput}
+                     style={{ padding: '0.6rem', fontSize: '0.8rem', flex: 1 }}
+                  />
+                  <button 
+                     onClick={handleMapEmail}
+                     disabled={!mapPlayerId || !mapEmailText.trim()}
+                     style={{
+                       background: (!mapPlayerId || !mapEmailText.trim()) ? 'rgba(255,255,255,0.1)' : 'var(--accent-primary)',
+                       color: (!mapPlayerId || !mapEmailText.trim()) ? 'var(--text-secondary)' : '#000',
+                       border: 'none',
+                       padding: '0 1rem',
+                       borderRadius: '6px',
+                       fontSize: '0.75rem',
+                       fontWeight: 'bold',
+                       cursor: (!mapPlayerId || !mapEmailText.trim()) ? 'not-allowed' : 'pointer'
+                     }}>
+                     LINK
+                  </button>
+                </div>
              </div>
           </div>
         </section>
