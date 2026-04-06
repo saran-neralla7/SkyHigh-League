@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './AdminScoring.module.css';
 import { Crown, Loader2, Lock, Trash2, Trophy, LogOut, Mail } from 'lucide-react';
 import { sendLocalNotification } from '../lib/notifications';
-import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague, startNewSeason, getActiveSeasonId } from '../lib/db';
+import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague, startNewSeason, getActiveSeasonId, recalculateAllPlayerMetrics } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
 import { sounds } from '../lib/sounds';
@@ -629,6 +629,38 @@ export const AdminScoring: React.FC = () => {
                ))}
                {players.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No players found.</p>}
              </div>
+           </div>
+           
+           {/* Recalculate Management */}
+           <div style={{ marginTop: '2rem', padding: '1rem', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.05)' }}>
+             <p className={styles.cardEyebrow} style={{ color: '#3b82f6' }}>FORCE DATA SYNC</p>
+             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+               If player points, raw scores, or rankings seem out of sync, click this button to scrape all historical matches and instantly reconstruct the leaderboard math from scratch.
+             </p>
+             <button 
+               onClick={async () => {
+                 setLoading(true);
+                 try {
+                   await recalculateAllPlayerMetrics();
+                   const fresh = await getPlayers();
+                   setPlayers(fresh);
+                   setModalConfig({ isOpen: true, title: "Sync Complete", message: "All player stats and raw scores have been completely synchronized from match history!" });
+                 } catch(e: any) {
+                   console.error(e);
+                   setModalConfig({ isOpen: true, title: "Error", message: "Sync failed." });
+                 }
+                 setLoading(false);
+               }}
+               style={{ 
+                 width: '100%', padding: '0.75rem', borderRadius: '8px', 
+                 background: '#3b82f6', color: '#fff', border: 'none', 
+                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+               }}
+               disabled={isAddingData}
+             >
+               RECALCULATE LEADERBOARD MATH
+             </button>
            </div>
            
            {/* Season Management */}

@@ -151,6 +151,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
 
   const logout = () => {
+    sessionStorage.clear();
     setPlayerData(null);
     return signOut(auth);
   };
