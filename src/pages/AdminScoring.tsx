@@ -4,6 +4,7 @@ import { Login } from './Login';
 import { useNavigate } from 'react-router-dom';
 import styles from './AdminScoring.module.css';
 import { Crown, Loader2, Lock, Trash2, Trophy, LogOut, Mail } from 'lucide-react';
+import { sendLocalNotification } from '../lib/notifications';
 import { getPlayers, saveMatchResults, getMatches, deleteMatch, deletePlayer, updatePlayerProfile, getMatchEntries, hardResetLeague, startNewSeason, getActiveSeasonId } from '../lib/db';
 import type { Player, Match } from '../lib/db';
 import { Modal } from '../components/Modal';
@@ -229,7 +230,15 @@ export const AdminScoring: React.FC = () => {
        if (editingMatchId) {
          await deleteMatch(editingMatchId);
        }
+
        await saveMatchResults(Number(matchNumber), results, matchTitle);
+       
+       const winnerName = results.find(r => r.rank === 1)?.name || 'Someone';
+       sendLocalNotification(
+          `Match ${matchNumber} Scored!`, 
+          `${winnerName} won this match! Check the leaderboard for your new rank. 🏆`
+       );
+
        setModalConfig({ isOpen: true, title: "Match Saved", message: "Match results calculated and saved successfully!" });
        setScores({});
        setMatchNumber(String(Number(matchNumber) + 1));

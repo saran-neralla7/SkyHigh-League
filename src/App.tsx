@@ -8,6 +8,10 @@ import { MatchDetails } from './pages/MatchDetails';
 
 import { Stats } from './pages/Stats';
 import { Squad } from './pages/Squad';
+import { Analytics } from './pages/Analytics';
+import { HallOfFame } from './pages/HallOfFame';
+import { HeadToHead } from './pages/HeadToHead';
+import { PlayerProfile } from './pages/PlayerProfile';
 
 import { useEffect } from 'react';
 import { db } from './firebase';
@@ -62,13 +66,20 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<ElitePavillion />} />
-          <Route path="history" element={<MatchHistory />} />
-          <Route path="stats" element={<Stats />} />
-          <Route path="squad" element={<Squad />} />
-          <Route path="admin" element={<AdminScoring />} />
-          <Route path="match/:id" element={<MatchDetails />} />
-          <Route path="profile/:id" element={<Stats />} />
+          <Route element={<Layout />}>
+            <Route path="/" element={<ElitePavillion />} />
+            <Route path="/squad" element={<Squad />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/admin" element={<AdminScoring />} />
+            <Route path="/matches" element={<MatchHistory />} />
+          </Route>
+
+          {/* Standalone immersive routes without bottom nav */}
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/hall-of-fame" element={<HallOfFame />} />
+          <Route path="/compare" element={<HeadToHead />} />
+          <Route path="/match/:id" element={<MatchDetails />} />
+          <Route path="/profile/:id" element={<PlayerProfile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

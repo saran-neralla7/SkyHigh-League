@@ -6,6 +6,7 @@ import styles from './Stats.module.css';
 import { LogOut, TrendingUp, Trophy, Target, Award, Zap, Crown, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { requestNotificationPermission } from '../lib/notifications';
 import { getPlayers, getMatches, getPlayerEntries } from '../lib/db';
 import type { Player } from '../lib/db';
 import { ImageUploader } from '../components/ImageUploader';
@@ -21,6 +22,9 @@ export const Stats: React.FC = () => {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
 
   useEffect(() => {
+    // Optionally trigger push permission silently on dash load
+    requestNotificationPermission().catch(console.error);
+
     if (!currentUser) return;
 
     const fetchStats = async () => {
@@ -103,15 +107,20 @@ export const Stats: React.FC = () => {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1>Player Stats</h1>
-        {currentUser && (
-          <button 
-            onClick={() => { logout(); navigate('/'); }} 
-            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '8px' }}
-            aria-label="Logout"
-          >
-            <LogOut size={22} />
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button onClick={() => navigate('/analytics')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.5rem 0.8rem', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>Analytics</button>
+          <button onClick={() => navigate('/compare')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.5rem 0.8rem', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>Compare</button>
+          
+          {currentUser && (
+            <button 
+              onClick={() => { logout(); navigate('/'); }} 
+              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 8px' }}
+              aria-label="Logout"
+            >
+              <LogOut size={22} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Profile Card */}

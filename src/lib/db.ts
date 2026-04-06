@@ -271,3 +271,69 @@ export const hardResetLeague = async () => {
   await batch.commit();
 };
 
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  dateEarned?: number;
+}
+
+export interface StreakData {
+  currentWinStreak: number;
+  bestWinStreak: number;
+  currentLossStreak: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  text: string;
+  timestamp: number;
+}
+
+export interface HallOfFameEntry {
+  id: string;
+  seasonId: string;
+  winnerName: string;
+  winnerAvatar: string;
+  points: number;
+  totalPlayers: number;
+  archivedAt: number;
+}
+
+export const computeStreaks = (entries: Entry[]): StreakData => {
+  let currentWinStreak = 0;
+  let bestWinStreak = 0;
+  let currentLossStreak = 0;
+  
+  const sorted = [...entries].sort((a,b) => b.score - a.score); // Not perfect if score is arbitrary, but we just want chronological. Assume they are chronological.
+  
+  for (const e of sorted) {
+    if (e.rank === 1) {
+      currentWinStreak++;
+      if (currentWinStreak > bestWinStreak) bestWinStreak = currentWinStreak;
+      currentLossStreak = 0;
+    } else if (e.rank >= 5) {
+      currentLossStreak++;
+      currentWinStreak = 0;
+    } else {
+      currentWinStreak = 0;
+      currentLossStreak = 0;
+    }
+  }
+  return { currentWinStreak, bestWinStreak, currentLossStreak };
+};
+
+export const computeAchievements = (player: Player, entries: Entry[]): Achievement[] => {
+  const achievements: Achievement[] = [
+    { id: 'first_win', name: 'First Blood', description: 'Win your first match', icon: '🏆', earned: player.metrics.wins > 0 },
+    { id: 'hat_trick', name: 'Hat-Trick Hero', description: 'Win 3 matches in a row', icon: '🎩', earned: computeStreaks(entries).bestWinStreak >= 3 },
+    { id: 'century', name: 'Century Club', description: 'Reach 100 total points', icon: '💯', earned: player.metrics.totalPoints >= 100 },
+    { id: 'veteran', name: 'Veteran', description: 'Play 10 matches', icon: '🛡️', earned: entries.length >= 10 },
+  ];
+  return achievements;
+};

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './ElitePavillion.module.css';
 import { Bell, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -12,6 +13,7 @@ import { sounds } from '../lib/sounds';
 const CROWN_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0VBQjMwOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgMWwzIDExaDE0bDMtMTEtNiA4LTQtOC00IDh6Ii8+PHBhdGggZD0iTTQgMTRoMTZ2NEg0eiIvPjwvc3ZnPg==`;
 
 export const ElitePavillion: React.FC = () => {
+  const navigate = useNavigate();
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
@@ -208,6 +210,7 @@ export const ElitePavillion: React.FC = () => {
           </div>
         </div>
         <div className={styles.headerRight}>
+          <div onClick={() => navigate('/hall-of-fame')} style={{ cursor: 'pointer', marginRight: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center' }}>🏆 HoF</div>
           <Share2 size={24} className={styles.bellIcon} onClick={handleWhatsAppShare} style={{ marginRight: '1rem', cursor: 'pointer' }} />
           <div className={styles.bellWrapper}>
             <Bell size={24} className={styles.bellIcon} />
@@ -223,6 +226,8 @@ export const ElitePavillion: React.FC = () => {
               <motion.div 
                  className={`${styles.podiumItem} ${styles.rank2}`}
                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                 onClick={() => navigate('/profile/' + podium[0].id)}
+                 style={{ cursor: 'pointer' }}
               >
                  <div className={styles.avatarWrapper}>
                    <img src={podium[0].avatar} alt={podium[0].name} className={styles.podiumAvatar} />
@@ -240,6 +245,8 @@ export const ElitePavillion: React.FC = () => {
               <motion.div 
                  className={`${styles.podiumItem} ${styles.rank1}`}
                  initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.2, type: 'spring' }}
+                 onClick={() => navigate('/profile/' + podium[1].id)}
+                 style={{ cursor: 'pointer', zIndex: 10 }}
               >
                  <div className={styles.avatarWrapperRank1}>
                    <div className={styles.haloEffect}></div>
@@ -257,9 +264,11 @@ export const ElitePavillion: React.FC = () => {
 
             {/* Rank 3 */}
             {podium[2] && (
-              <motion.div 
+               <motion.div 
                  className={`${styles.podiumItem} ${styles.rank3}`}
                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                 onClick={() => navigate('/profile/' + podium[2].id)}
+                 style={{ cursor: 'pointer' }}
               >
                  <div className={styles.avatarWrapper}>
                    <img src={podium[2].avatar} alt={podium[2].name} className={styles.podiumAvatar} />
@@ -282,6 +291,8 @@ export const ElitePavillion: React.FC = () => {
                <motion.div 
                   key={player.id} 
                   className={styles.standingsRow}
+                  onClick={() => navigate('/profile/' + player.id)}
+                  style={{ cursor: 'pointer' }}
                   initial={{ opacity: 0, x: -10 }} 
                   animate={{ opacity: 1, x: 0 }} 
                   transition={{ delay: 0.4 + (idx * 0.05) }}
