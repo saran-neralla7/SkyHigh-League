@@ -61,6 +61,38 @@ export const PlayerProfile: React.FC = () => {
       </div>
 
       <Achievements achievements={achievements} />
+
+      <section style={{ marginTop: '2rem' }}>
+        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Target size={20} color="var(--accent-primary)"/> Match History 
+        </h3>
+        
+        {entries.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>No matches played yet.</p>}
+        {entries.slice().reverse().map((e, idx) => (
+          <div 
+            key={idx} 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '12px', 
+              padding: '1rem', 
+              marginBottom: '0.75rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>MATCH {entries.length - idx}</div>
+              <div style={{ fontWeight: 600 }}>Rank #{e.rank}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>+{e.pointsAwarded} PTS</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Score: {e.score}</div>
+            </div>
+          </div>
+        ))}
+      </section>
     </div>
   );
 };

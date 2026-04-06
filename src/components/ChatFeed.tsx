@@ -40,18 +40,21 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({ matchId }) => {
     e.preventDefault();
     if (!text.trim() || !currentUser) return;
     
-    // Default name if guest
     const senderName = playerData ? playerData.name : (currentUser.email?.split('@')[0] || 'Guest');
 
-    await addDoc(collection(db, 'chat'), {
-      matchId,
-      playerId: currentUser.uid,
-      playerName: senderName,
-      text: text.trim(),
-      timestamp: Date.now()
-    });
-
-    setText('');
+    try {
+      await addDoc(collection(db, 'chat'), {
+        matchId,
+        playerId: currentUser.uid,
+        playerName: senderName,
+        text: text.trim(),
+        timestamp: Date.now()
+      });
+      setText('');
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      alert(`Could not send message. Error: ${error.message}\nIf this is a permission error, please ask the Admin to update Firebase Firestore Rules to allow writes to the 'chat' collection.`);
+    }
   };
 
   const insertReaction = (emoji: string) => {

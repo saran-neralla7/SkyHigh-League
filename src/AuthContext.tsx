@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from './firebase';
-import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
 interface AuthContextType {
@@ -34,11 +34,38 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
 
   const fetchPlayerData = async (user: User) => {
     try {
-      // Check if there's a players doc linked to this auth UID
       const playerDocRef = doc(db, 'playerAuth', user.uid);
       const playerSnap = await getDoc(playerDocRef);
+      
+      let linkedPlayerId: string | null = null;
       if (playerSnap.exists()) {
-        const linkedPlayerId = playerSnap.data().playerId;
+        linkedPlayerId = playerSnap.data().playerId;
+      } else if (user.email) {
+        // Fallback 1: Query by email mapping existing auth table
+        const authQ = query(collection(db, 'playerAuth'), where('email', '==', user.email));
+        const authDocs = await getDocs(authQ);
+        if (!authDocs.empty) {
+          linkedPlayerId = authDocs.docs[0].data().playerId;
+          await setDoc(playerDocRef, { playerId: linkedPlayerId, email: user.email });
+        } else {
+          // Fallback 2: Fuzzy match email to player names in db
+          const { getDocs: getDocsFirebase, collection: colFirebase } = await import('firebase/firestore');
+          const allPlayersSnap = await getDocsFirebase(colFirebase(db, 'players'));
+          const emailPrefix = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+          
+          for (const p of allPlayersSnap.docs) {
+             const pName = p.data().name.toLowerCase().replace(/\s/g, '');
+             // If email prefix matches player name or vice versa
+             if (pName.includes(emailPrefix) || emailPrefix.includes(pName)) {
+                linkedPlayerId = p.id;
+                await setDoc(playerDocRef, { playerId: linkedPlayerId, email: user.email });
+                break;
+             }
+          }
+        }
+      }
+
+      if (linkedPlayerId) {
         const actualPlayerRef = doc(db, 'players', linkedPlayerId);
         const actualPlayerSnap = await getDoc(actualPlayerRef);
         if (actualPlayerSnap.exists()) {
