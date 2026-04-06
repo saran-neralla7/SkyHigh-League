@@ -16,9 +16,11 @@ export const WelcomeModal: React.FC = () => {
   const [greeting, setGreeting] = useState('Welcome');
 
   useEffect(() => {
+    if (authLoading) return;
+
     const hasSeen = sessionStorage.getItem('welcome_seen');
-    if (hasSeen || authLoading || !currentUser) {
-      if (!authLoading) setLoading(false);
+    if (hasSeen || !currentUser) {
+      setLoading(false);
       return;
     }
 
@@ -66,7 +68,7 @@ export const WelcomeModal: React.FC = () => {
     };
 
     init();
-  }, [currentUser, playerData]);
+  }, [currentUser, playerData, authLoading]);
 
   const generateSarcasm = (rank: number, form: string[]) => {
     if (form.length === 0) return "Welcome rookie! Ready to inevitably disappoint your squad?";

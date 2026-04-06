@@ -42,11 +42,11 @@ export const Layout: React.FC = () => {
           className={styles.mainContent}
         >
           <Outlet />
-          <footer style={{ marginTop: 'auto', textAlign: 'center', padding: '1.5rem', fontSize: '0.65rem', color: 'var(--text-secondary)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-             Designed and Developed by SARAN NERALLA
-          </footer>
         </motion.main>
       </AnimatePresence>
+      <footer style={{ marginTop: 'auto', textAlign: 'center', padding: '1.5rem', fontSize: '0.65rem', color: 'var(--text-secondary)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+         Designed and Developed by SARAN NERALLA
+      </footer>
       <BottomNav />
     </div>
   );
