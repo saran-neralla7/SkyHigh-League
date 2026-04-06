@@ -41,7 +41,32 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       if (playerSnap.exists()) {
         linkedPlayerId = playerSnap.data().playerId;
       } else if (user.email) {
-        // Fallback 1: Query by email mapping existing auth table
+        
+        const hardcodedLinks: Record<string, string> = {
+          'saran@shc.com': 'Saran Neralla',
+          'suraj@shc.com': 'Suraj Neralla',
+          'sailesh@shc.com': 'Sailesh Holding',
+          'deepu@shc.com': 'KL Deepak',
+          'sashank@shc.com': 'Banned Sashank',
+          'sunny@shc.com': 'Sunny Smith',
+          'pavan@shc.com': 'Pavan',
+          'prabhas@shc.com': 'Prabhas'
+        };
+        const explicitName = hardcodedLinks[user.email.toLowerCase()];
+        
+        if (explicitName) {
+           const allPlayersSnap = await getDocs(collection(db, 'players'));
+           for (const p of allPlayersSnap.docs) {
+              if (p.data().name === explicitName) {
+                 linkedPlayerId = p.id;
+                 await setDoc(playerDocRef, { playerId: linkedPlayerId, email: user.email });
+                 break;
+              }
+           }
+        }
+
+        if (!linkedPlayerId) {
+          // Fallback 1: Query by email mapping existing auth table
         const authQ = query(collection(db, 'playerAuth'), where('email', '==', user.email));
         const authDocs = await getDocs(authQ);
         if (!authDocs.empty) {
@@ -68,7 +93,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
              }
           }
         }
-      }
+      } // closes if (!linkedPlayerId)
+      } // closes else if (user.email)
 
       if (linkedPlayerId) {
         const actualPlayerRef = doc(db, 'players', linkedPlayerId);

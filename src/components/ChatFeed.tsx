@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Send } from 'lucide-react';
 import type { ChatMessage } from '../lib/db';
@@ -20,8 +20,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({ matchId }) => {
     // We only load messages for the specific match
     const q = query(
       collection(db, 'chat'),
-      where('matchId', '==', matchId),
-      orderBy('timestamp', 'asc')
+      where('matchId', '==', matchId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -29,6 +28,8 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({ matchId }) => {
       snapshot.forEach(doc => {
         msgs.push({ id: doc.id, ...doc.data() } as ChatMessage);
       });
+      // Sort client-side to avoid composite index requirement
+      msgs.sort((a, b) => a.timestamp - b.timestamp);
       setMessages(msgs);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
