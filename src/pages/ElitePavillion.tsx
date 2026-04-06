@@ -9,6 +9,8 @@ import { getPlayers, getActiveSeasonId } from '../lib/db';
 import type { Player } from '../lib/db';
 import { WhatsAppGraphic } from '../components/WhatsAppGraphic';
 import { sounds } from '../lib/sounds';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 const CROWN_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0VBQjMwOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgMWwzIDExaDE0bDMtMTEtNiA4LTQtOC00IDh6Ii8+PHBhdGggZD0iTTQgMTRoMTZ2NEg0eiIvPjwvc3ZnPg==`;
 
@@ -27,6 +29,9 @@ export const ElitePavillion: React.FC = () => {
          const dbSeason = await getActiveSeasonId();
          setSeason(dbSeason);
          
+         const eSnap = await getDocs(collection(db, 'entries'));
+         const allEntries = eSnap.docs.map(d => d.data());
+         
          let currentRank = 1;
          const finalStandings = dbPlayers.map((p: Player, index: number) => {
             if (index > 0) {
@@ -35,12 +40,16 @@ export const ElitePavillion: React.FC = () => {
                  currentRank = index + 1;
                }
             }
+            
+            const pEntries = allEntries.filter(e => e.playerId === p.id);
+            const dynamicRawScore = pEntries.reduce((sum, e) => sum + e.score, 0);
+
             return {
                id: p.id,
                rank: currentRank,
                name: p.name,
                points: p.metrics.totalPoints.toLocaleString(),
-               rawScore: (p.metrics.totalRawScore || 0).toLocaleString(),
+               rawScore: dynamicRawScore.toLocaleString(),
                avatar: p.profileImage || "/default-avatar.svg",
                movement: 0,
                form: p.metrics.form || []

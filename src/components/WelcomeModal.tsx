@@ -4,6 +4,8 @@ import { useAuth } from '../AuthContext';
 import { getPlayers } from '../lib/db';
 import styles from './WelcomeModal.module.css';
 import { Sparkles, Trophy, X, Activity, Target } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export const WelcomeModal: React.FC = () => {
   const { currentUser, playerData, isAdmin, loading: authLoading } = useAuth();
@@ -34,7 +36,12 @@ export const WelcomeModal: React.FC = () => {
 
           if (pData) {
             const currentRank = pIndex + 1;
-            const pts = pData.metrics.totalRawScore || 0;
+            
+            const eSnap = await getDocs(collection(db, 'entries'));
+            const pEntries = eSnap.docs.map(d => d.data()).filter(e => e.playerId === pData.id);
+            const dynamicRawScore = pEntries.reduce((sum, e) => sum + e.score, 0);
+
+            const pts = dynamicRawScore || 0;
             const form = pData.metrics.form || [];
             
             setStats({ rank: currentRank, points: pts, form });

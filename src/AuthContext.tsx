@@ -49,14 +49,19 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
           await setDoc(playerDocRef, { playerId: linkedPlayerId, email: user.email });
         } else {
           // Fallback 2: Fuzzy match email to player names in db
-          const { getDocs: getDocsFirebase, collection: colFirebase } = await import('firebase/firestore');
-          const allPlayersSnap = await getDocsFirebase(colFirebase(db, 'players'));
-          const emailPrefix = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+          const allPlayersSnap = await getDocs(collection(db, 'players'));
+          const emailStr = (user.email || '').toLowerCase();
+          const emailPrefix = emailStr.split('@')[0].replace(/[^a-z0-9]/g, '');
           
           for (const p of allPlayersSnap.docs) {
              const pName = p.data().name.toLowerCase().replace(/\s/g, '');
-             // If email prefix matches player name or vice versa
-             if (pName.includes(emailPrefix) || emailPrefix.includes(pName)) {
+             // Check exact matches or prefixes
+             if (
+                pName === emailPrefix || 
+                pName.includes(emailPrefix) || 
+                emailPrefix.includes(pName) ||
+                pName.includes(emailStr)
+             ) {
                 linkedPlayerId = p.id;
                 await setDoc(playerDocRef, { playerId: linkedPlayerId, email: user.email });
                 break;
