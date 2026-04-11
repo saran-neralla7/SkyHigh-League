@@ -5,7 +5,19 @@ import { getPlayers } from '../lib/db';
 import styles from './WelcomeModal.module.css';
 import { Sparkles, Trophy, X, Activity, Target } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, query, where } from 'firebase/firestore';
+
+// Hardcoded email-to-player map for guaranteed resolution
+const PLAYER_EMAIL_MAP: Record<string, string> = {
+  'saran@shc.com': 'Saran Neralla',
+  'suraj@shc.com': 'Suraj Neralla',
+  'sailesh@shc.com': 'Sailesh Holding',
+  'deepu@shc.com': 'KL Deepak',
+  'sashank@shc.com': 'Banned Sashank',
+  'sunny@shc.com': 'Sunny Smith',
+  'pavan@shc.com': 'Pavan',
+  'prabhas@shc.com': 'Prabhas'
+};
 
 export const WelcomeModal: React.FC = () => {
   const { currentUser, playerData, isAdmin, loading: authLoading } = useAuth();
@@ -14,6 +26,7 @@ export const WelcomeModal: React.FC = () => {
   const [stats, setStats] = useState({ rank: 0, points: 0, form: [] as string[] });
   const [aiText, setAiText] = useState('');
   const [greeting, setGreeting] = useState('Welcome');
+  const [resolvedPlayerName, setResolvedPlayerName] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -31,26 +44,65 @@ export const WelcomeModal: React.FC = () => {
         else if (hour < 18) setGreeting('Good afternoon');
         else setGreeting('Good evening');
 
+        // Step 1: Independently resolve the player
+        let resolvedPlayer: any = null;
+        const allPlayers = await getPlayers();
+
         if (playerData) {
-          const allPlayers = await getPlayers();
-          const pIndex = allPlayers.findIndex(p => p.id === playerData.id);
-          const pData = allPlayers[pIndex];
-
-          if (pData) {
-            const currentRank = pIndex + 1;
-            
-            const eSnap = await getDocs(collection(db, 'entries'));
-            const pEntries = eSnap.docs.map(d => d.data()).filter(e => e.playerId === pData.id);
-            const dynamicRawScore = pEntries.reduce((sum, e) => sum + e.score, 0);
-
-            const pts = dynamicRawScore || 0;
-            const form = pData.metrics.form || [];
-            
-            setStats({ rank: currentRank, points: pts, form });
-            setAiText(generateSarcasm(currentRank, form));
-          } else {
-            setAiText("You don't even have a player profile yet. Typical.");
+          resolvedPlayer = allPlayers.find(p => p.id === playerData.id) || null;
+        }
+        
+        if (!resolvedPlayer && currentUser?.email) {
+          const emailKey = currentUser.email.toLowerCase();
+          const mappedName = PLAYER_EMAIL_MAP[emailKey];
+          
+          if (mappedName) {
+            resolvedPlayer = allPlayers.find(p => p.name === mappedName) || null;
           }
+          
+          if (!resolvedPlayer) {
+            const authQ = query(collection(db, 'playerAuth'), where('email', '==', currentUser.email));
+            const authDocs = await getDocs(authQ);
+            if (!authDocs.empty) {
+              const linkedId = authDocs.docs[0].data().playerId;
+              resolvedPlayer = allPlayers.find(p => p.id === linkedId) || null;
+            }
+          }
+          
+          if (!resolvedPlayer) {
+            const uidDoc = await getDoc(doc(db, 'playerAuth', currentUser.uid));
+            if (uidDoc.exists()) {
+              const linkedId = uidDoc.data().playerId;
+              resolvedPlayer = allPlayers.find(p => p.id === linkedId) || null;
+            }
+          }
+
+          if (resolvedPlayer && !playerData) {
+            try {
+              await setDoc(doc(db, 'playerAuth', currentUser.uid), { 
+                playerId: resolvedPlayer.id, 
+                email: currentUser.email 
+              });
+            } catch (e) {
+              console.warn("Could not persist player link:", e);
+            }
+          }
+        }
+
+        if (resolvedPlayer) {
+          setResolvedPlayerName(resolvedPlayer.name);
+          const pIndex = allPlayers.findIndex(p => p.id === resolvedPlayer.id);
+          const currentRank = pIndex + 1;
+          
+          const eSnap = await getDocs(collection(db, 'entries'));
+          const pEntries = eSnap.docs.map(d => d.data()).filter(e => e.playerId === resolvedPlayer.id);
+          const dynamicRawScore = pEntries.reduce((sum, e) => sum + e.score, 0);
+
+          const pts = dynamicRawScore || 0;
+          const form = resolvedPlayer.metrics.form || [];
+          
+          setStats({ rank: currentRank, points: pts, form });
+          setAiText(generateSarcasm(currentRank, form));
         } else {
           if (isAdmin || currentUser?.email?.toLowerCase().includes('admin')) {
              setAiText("Welcome back Admin. Who are you going to ban today?");
@@ -91,7 +143,8 @@ export const WelcomeModal: React.FC = () => {
 
   if (loading || !isOpen) return null;
 
-  const username = playerData?.name || (currentUser?.email?.split('@')[0]) || 'User';
+  const username = resolvedPlayerName || playerData?.name || (currentUser?.email?.split('@')[0]) || 'User';
+  const hasPlayerStats = stats.rank > 0;
 
   return (
     <AnimatePresence>
@@ -110,7 +163,7 @@ export const WelcomeModal: React.FC = () => {
           
           <div className={styles.divider}></div>
 
-          {playerData ? (
+          {hasPlayerStats ? (
             <div className={styles.statsWrapper}>
               <div className={styles.statsGrid}>
                 <div className={styles.statBox}>

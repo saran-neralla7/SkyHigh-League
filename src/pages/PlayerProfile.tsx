@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Target, Award, TrendingUp } from 'lucide-react';
-import { getPlayers, getPlayerEntries, computeAchievements, computeStreaks } from '../lib/db';
-import type { Player, Entry } from '../lib/db';
+import { getPlayers, getPlayerEntries, getMatches, computeAchievements, computeStreaks } from '../lib/db';
+import type { Player, Entry, Match } from '../lib/db';
 import { Achievements } from '../components/Achievements';
 
 export const PlayerProfile: React.FC = () => {
@@ -10,16 +10,19 @@ export const PlayerProfile: React.FC = () => {
   const navigate = useNavigate();
   const [player, setPlayer] = useState<Player | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
 
   useEffect(() => {
     if (!id) return;
     Promise.all([
       getPlayers(),
-      getPlayerEntries(id)
-    ]).then(([players, e]) => {
+      getPlayerEntries(id),
+      getMatches()
+    ]).then(([players, e, m]) => {
       const p = players.find(x => x.id === id);
       if (p) setPlayer(p);
       setEntries(e);
+      setMatches(m);
     });
   }, [id]);
 
@@ -27,6 +30,13 @@ export const PlayerProfile: React.FC = () => {
 
   const streaks = computeStreaks(entries);
   const achievements = computeAchievements(player, entries);
+
+  // Sort entries by match number descending (latest first)
+  const sortedEntries = [...entries].sort((a, b) => {
+    const matchA = matches.find(m => m.id === a.matchId);
+    const matchB = matches.find(m => m.id === b.matchId);
+    return (matchB?.matchNumber || 0) - (matchA?.matchNumber || 0);
+  });
 
   return (
     <div style={{ minHeight: '100vh', padding: 'max(env(safe-area-inset-top, 20px), 20px) 20px 100px', background: 'var(--bg-main)' }}>
@@ -67,31 +77,41 @@ export const PlayerProfile: React.FC = () => {
           <Target size={20} color="var(--accent-primary)"/> Match History 
         </h3>
         
-        {entries.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>No matches played yet.</p>}
-        {entries.slice().reverse().map((e, idx) => (
-          <div 
-            key={idx} 
-            style={{ 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--border)', 
-              borderRadius: '12px', 
-              padding: '1rem', 
-              marginBottom: '0.75rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}
-          >
-            <div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>MATCH {entries.length - idx}</div>
-              <div style={{ fontWeight: 600 }}>Rank #{e.rank}</div>
+        {sortedEntries.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>No matches played yet.</p>}
+        {sortedEntries.map((e, idx) => {
+          const matchDoc = matches.find(m => m.id === e.matchId);
+          const matchNum = matchDoc ? matchDoc.matchNumber : idx + 1;
+          const matchTitle = (matchDoc as any)?.matchTitle || '';
+          
+          return (
+            <div 
+              key={idx} 
+              style={{ 
+                background: 'var(--bg-card)', 
+                border: '1px solid var(--border)', 
+                borderRadius: '12px', 
+                padding: '1rem', 
+                marginBottom: '0.75rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                  MATCH {matchNum}{matchTitle ? `: ${matchTitle}` : ''}
+                </div>
+                <div style={{ fontWeight: 600, color: e.rank === 1 ? '#eab308' : e.rank <= 3 ? '#22c55e' : 'var(--text-primary)' }}>
+                  Rank #{e.rank}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>+{e.pointsAwarded} PTS</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Score: {e.score}</div>
+              </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>+{e.pointsAwarded} PTS</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Score: {e.score}</div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
     </div>
   );
